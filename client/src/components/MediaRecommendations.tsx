@@ -7,6 +7,7 @@ export interface MediaItem {
   startTime: string;
   endTime: string;
   description: string;
+  url?: string;
   thumbnail?: string;
 }
 
@@ -27,9 +28,16 @@ export function MediaRecommendations({ items }: MediaRecommendationsProps) {
             key={index}
             data-testid={`media-item-${index}`}
             className="overflow-hidden hover-elevate cursor-pointer"
+            onClick={() => item.url && window.open(item.url, "_blank")}
           >
-            <div className="relative aspect-video bg-muted flex items-center justify-center">
-              {item.type === "image" ? (
+            <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
+              {item.thumbnail ? (
+                <img 
+                  src={item.thumbnail} 
+                  alt={item.description}
+                  className="w-full h-full object-cover"
+                />
+              ) : item.type === "image" ? (
                 <Image className="w-12 h-12 text-muted-foreground" />
               ) : (
                 <Video className="w-12 h-12 text-muted-foreground" />

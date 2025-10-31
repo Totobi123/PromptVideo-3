@@ -9,7 +9,8 @@ import { LoadingState } from "@/components/LoadingState";
 import { ExportButtons } from "@/components/ExportButtons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type Step = "prompt" | "details" | "generating" | "results";
 
@@ -21,6 +22,7 @@ const steps = [
 ];
 
 export default function Home() {
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<Step>("prompt");
   const [prompt, setPrompt] = useState("");
   const [mood, setMood] = useState("");
@@ -29,6 +31,8 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [scriptSegments, setScriptSegments] = useState<ScriptSegment[]>([]);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
@@ -36,60 +40,57 @@ export default function Home() {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (mood && pace && length) {
       setCurrentStep("generating");
       setProgress(0);
+      setIsGenerating(true);
       
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-              setScriptSegments([
-                {
-                  startTime: "00:00",
-                  endTime: "00:20",
-                  text: "Welcome to our exploration of " + prompt.substring(0, 50) + "... Let's dive into this fascinating topic.",
-                },
-                {
-                  startTime: "00:20",
-                  endTime: "00:50",
-                  text: "In this video, we'll cover the key aspects and important details you need to know.",
-                },
-                {
-                  startTime: "00:50",
-                  endTime: "01:20",
-                  text: "Understanding these concepts will help you gain valuable insights and knowledge.",
-                },
-              ]);
-              setMediaItems([
-                {
-                  type: "image",
-                  startTime: "00:00",
-                  endTime: "00:20",
-                  description: "Opening scene with relevant imagery",
-                },
-                {
-                  type: "video",
-                  startTime: "00:20",
-                  endTime: "00:50",
-                  description: "Dynamic footage showing key concepts",
-                },
-                {
-                  type: "image",
-                  startTime: "00:50",
-                  endTime: "01:20",
-                  description: "Closing visual summary",
-                },
-              ]);
-              setCurrentStep("results");
-            }, 500);
-            return 100;
-          }
-          return prev + 2;
+      try {
+        const response = await fetch("/api/generate-script", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt,
+            mood,
+            pace,
+            length: parseInt(length),
+          }),
         });
-      }, 50);
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to generate script");
+        }
+
+        const data = await response.json();
+        
+        setScriptSegments(data.segments);
+        setMediaItems(data.mediaItems);
+        setProgress(100);
+        
+        setTimeout(() => {
+          setCurrentStep("results");
+          setIsGenerating(false);
+          
+          toast({
+            title: "Script Generated!",
+            description: "Your video script is ready with stock media recommendations.",
+          });
+        }, 500);
+      } catch (error) {
+        console.error("Error generating script:", error);
+        setIsGenerating(false);
+        setCurrentStep("details");
+        
+        toast({
+          title: "Generation Failed",
+          description: error instanceof Error ? error.message : "Failed to generate script. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -102,10 +103,10 @@ export default function Home() {
     setProgress(0);
     setScriptSegments([]);
     setMediaItems([]);
+    setAudioUrl("");
   };
 
   const handleExportScript = () => {
-    console.log("Exporting script...");
     const scriptText = scriptSegments
       .map((s) => `[${s.startTime} - ${s.endTime}]\n${s.text}`)
       .join("\n\n");
@@ -115,24 +116,67 @@ export default function Home() {
     a.href = url;
     a.download = "video-script.txt";
     a.click();
+    
+    toast({
+      title: "Script Exported",
+      description: "Your video script has been downloaded.",
+    });
   };
 
-  const handleExportAudio = () => {
-    console.log("Exporting audio...");
-    alert("Audio export would integrate with Murf AI TTS service");
+  const handleExportAudio = async () => {
+    try {
+      const fullText = scriptSegments.map(s => s.text).join(" ");
+      
+      const response = await fetch("/api/generate-audio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: fullText,
+          voiceId: "en-US-terrell",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate audio");
+      }
+
+      const data = await response.json();
+      setAudioUrl(data.audioUrl);
+      
+      // Open the audio URL in a new tab
+      window.open(data.audioUrl, "_blank");
+      
+      toast({
+        title: "Audio Generated",
+        description: "Your voiceover has been generated and opened in a new tab.",
+      });
+    } catch (error) {
+      console.error("Error generating audio:", error);
+      toast({
+        title: "Audio Generation Failed",
+        description: "Failed to generate voiceover. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportMedia = () => {
-    console.log("Exporting media list...");
     const mediaText = mediaItems
-      .map((m) => `[${m.startTime} - ${m.endTime}] ${m.type.toUpperCase()}: ${m.description}`)
-      .join("\n");
+      .map((m) => `[${m.startTime} - ${m.endTime}] ${m.type.toUpperCase()}: ${m.description}\nURL: ${m.url || "N/A"}`)
+      .join("\n\n");
     const blob = new Blob([mediaText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "media-list.txt";
     a.click();
+    
+    toast({
+      title: "Media List Exported",
+      description: "Your stock media list has been downloaded.",
+    });
   };
 
   const getCurrentStepNumber = () => {
@@ -144,6 +188,16 @@ export default function Home() {
     };
     return stepMap[currentStep];
   };
+
+  // Update progress during generation
+  useState(() => {
+    if (isGenerating && progress < 90) {
+      const interval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 5, 90));
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -220,7 +274,7 @@ export default function Home() {
         {currentStep === "generating" && (
           <div className="max-w-2xl mx-auto">
             <LoadingState
-              message="AI is generating your video script..."
+              message="AI is generating your video script with stock media..."
               progress={progress}
             />
           </div>
@@ -242,6 +296,16 @@ export default function Home() {
                 Start Over
               </Button>
             </div>
+            
+            {scriptSegments.length === 0 && (
+              <Card className="p-6">
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <AlertCircle className="w-5 h-5" />
+                  <p>No script segments generated. Please try again.</p>
+                </div>
+              </Card>
+            )}
+            
             <div className="grid lg:grid-cols-2 gap-6">
               <ScriptTimeline segments={scriptSegments} />
               <MediaRecommendations items={mediaItems} />
