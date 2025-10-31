@@ -16,3 +16,52 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Video generation schemas
+export const generateScriptRequestSchema = z.object({
+  prompt: z.string().min(10),
+  mood: z.enum(["happy", "casual", "sad", "promotional", "enthusiastic"]),
+  pace: z.enum(["normal", "fast", "very_fast"]),
+  length: z.number().positive(),
+});
+
+export type GenerateScriptRequest = z.infer<typeof generateScriptRequestSchema>;
+
+export const scriptSegmentSchema = z.object({
+  startTime: z.string(),
+  endTime: z.string(),
+  text: z.string(),
+});
+
+export type ScriptSegment = z.infer<typeof scriptSegmentSchema>;
+
+export const mediaItemSchema = z.object({
+  type: z.enum(["image", "video"]),
+  startTime: z.string(),
+  endTime: z.string(),
+  description: z.string(),
+  url: z.string().optional(),
+  thumbnail: z.string().optional(),
+});
+
+export type MediaItem = z.infer<typeof mediaItemSchema>;
+
+export const generateScriptResponseSchema = z.object({
+  segments: z.array(scriptSegmentSchema),
+  mediaItems: z.array(mediaItemSchema),
+});
+
+export type GenerateScriptResponse = z.infer<typeof generateScriptResponseSchema>;
+
+export const generateAudioRequestSchema = z.object({
+  text: z.string(),
+  voiceId: z.string().default("en-US-terrell"),
+});
+
+export type GenerateAudioRequest = z.infer<typeof generateAudioRequestSchema>;
+
+export const generateAudioResponseSchema = z.object({
+  audioUrl: z.string(),
+});
+
+export type GenerateAudioResponse = z.infer<typeof generateAudioResponseSchema>;
