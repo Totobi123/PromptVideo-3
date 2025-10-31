@@ -2,7 +2,15 @@
 
 ## Overview
 
-Tivideo is a web application that generates professional video scripts with AI-powered content, voiceover recommendations, and stock media suggestions. Users can create YouTube-style video scripts by describing their video concept, selecting mood and pace preferences, and receiving timestamped scripts with corresponding visual media recommendations. The platform requires no user authentication and focuses on a streamlined, single-page generation workflow.
+Tivideo is a web application that generates professional video scripts with AI-powered content, mood-based voiceover recommendations, stock media suggestions, and royalty-free background music. Users can create YouTube-style video scripts by describing their video concept, selecting mood and pace preferences, and receiving timestamped scripts with corresponding visual media recommendations, voice selection, and background music. The platform requires no user authentication and focuses on a streamlined, single-page generation workflow.
+
+## Recent Changes (October 31, 2025)
+
+Added mood-based voice selection and background music generation:
+- **Mood-Based Voice Selection**: Each mood now automatically selects an appropriate voice from Murf.ai (Happy uses Terrell, Casual uses Natalie, Sad uses Clint, Promotional uses Wayne, Enthusiastic uses Ken)
+- **Background Music Generation**: System automatically selects royalty-free background music from Kevin MacLeod's incompetech.com library based on the selected mood
+- **Music Preview & Download**: Users can preview and download the selected background music directly from the results page
+- **Enhanced Results Display**: New VoiceAndMusicInfo component displays selected voice and music information with interactive controls
 
 ## User Preferences
 
@@ -40,9 +48,11 @@ Preferred communication style: Simple, everyday language.
 
 **AI Script Generation**: OpenRouter API using the DeepSeek chat model (`deepseek/deepseek-chat-v3.1:free`) for generating video scripts based on user prompts. The system sends detailed prompts including mood, pace, and length requirements, receiving structured JSON responses with timestamped segments.
 
-**Text-to-Speech**: Murf.ai API for generating voiceover audio. The service accepts text and voice ID parameters, returning audio file URLs.
+**Text-to-Speech**: Murf.ai API for generating voiceover audio. The service uses mood-based voice selection, automatically choosing appropriate voices based on the selected mood (e.g., Terrell for happy, Natalie for casual, Clint for sad).
 
 **Stock Media**: Pexels API for fetching royalty-free images and videos. The application searches for media based on AI-generated descriptions, retrieving URLs and thumbnails for each media item.
+
+**Background Music**: Curated library of royalty-free music from Kevin MacLeod (incompetech.com). All tracks are CC BY 4.0 licensed. The system selects appropriate music based on the video's mood, providing variety within each mood category.
 
 **Database**: PostgreSQL configured via Neon serverless driver (@neondatabase/serverless). Drizzle ORM provides type-safe database operations with schema management. Currently, the schema includes a basic users table (not actively used for the no-login workflow), suggesting potential future authentication features.
 
