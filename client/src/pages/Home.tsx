@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { SelectionBoxes } from "@/components/SelectionBoxes";
@@ -190,14 +190,14 @@ export default function Home() {
   };
 
   // Update progress during generation
-  useState(() => {
+  useEffect(() => {
     if (isGenerating && progress < 90) {
       const interval = setInterval(() => {
         setProgress(prev => Math.min(prev + 5, 90));
       }, 300);
       return () => clearInterval(interval);
     }
-  });
+  }, [isGenerating, progress]);
 
   return (
     <div className="min-h-screen bg-background">

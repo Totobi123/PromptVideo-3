@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScriptRequestSchema } from "@shared/schema";
+import { generateScriptRequestSchema, generateAudioRequestSchema } from "@shared/schema";
 import { generateVideoScript } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
 import { generateVoiceover } from "./services/murf";
@@ -42,13 +42,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate voiceover audio
   app.post("/api/generate-audio", async (req, res) => {
     try {
-      const { text, voiceId } = req.body;
+      const validatedData = generateAudioRequestSchema.parse(req.body);
       
-      if (!text) {
-        return res.status(400).json({ error: "Text is required" });
-      }
-
-      const audioUrl = await generateVoiceover(text, voiceId || "en-US-terrell");
+      const audioUrl = await generateVoiceover(validatedData.text, validatedData.voiceId);
       
       res.json({ audioUrl });
     } catch (error) {

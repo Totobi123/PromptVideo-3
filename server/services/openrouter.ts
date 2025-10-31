@@ -1,4 +1,5 @@
 import type { GenerateScriptRequest, ScriptSegment, MediaItem } from "@shared/schema";
+import { generateScriptResponseSchema } from "@shared/schema";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -103,10 +104,23 @@ RULES:
       jsonContent = jsonContent.replace(/```\n?/g, "");
     }
 
-    const result = JSON.parse(jsonContent);
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(jsonContent);
+    } catch (parseError) {
+      throw new Error("AI response was not valid JSON. Please try again.");
+    }
+
+    // Validate the response against the schema
+    const validationResult = generateScriptResponseSchema.safeParse(parsedResult);
+    if (!validationResult.success) {
+      console.error("Schema validation failed:", validationResult.error);
+      throw new Error("AI response did not match expected format. Please try again.");
+    }
+
     return {
-      segments: result.segments,
-      mediaItems: result.mediaItems,
+      segments: validationResult.data.segments,
+      mediaItems: validationResult.data.mediaItems,
     };
   } catch (error) {
     console.error("Error generating script:", error);
