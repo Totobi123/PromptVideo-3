@@ -46,6 +46,11 @@ export const mediaItemSchema = z.object({
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;
 
+export const aiScriptResponseSchema = z.object({
+  segments: z.array(scriptSegmentSchema),
+  mediaItems: z.array(mediaItemSchema),
+});
+
 export const generateScriptResponseSchema = z.object({
   segments: z.array(scriptSegmentSchema),
   mediaItems: z.array(mediaItemSchema),

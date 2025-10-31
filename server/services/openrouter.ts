@@ -1,5 +1,5 @@
 import type { GenerateScriptRequest, ScriptSegment, MediaItem } from "@shared/schema";
-import { generateScriptResponseSchema } from "@shared/schema";
+import { aiScriptResponseSchema } from "@shared/schema";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -112,7 +112,7 @@ RULES:
     }
 
     // Validate the response against the schema
-    const validationResult = generateScriptResponseSchema.safeParse(parsedResult);
+    const validationResult = aiScriptResponseSchema.safeParse(parsedResult);
     if (!validationResult.success) {
       console.error("Schema validation failed:", validationResult.error);
       throw new Error("AI response did not match expected format. Please try again.");
