@@ -7,6 +7,7 @@ import { ScriptTimeline, type ScriptSegment } from "@/components/ScriptTimeline"
 import { MediaRecommendations, type MediaItem } from "@/components/MediaRecommendations";
 import { LoadingState } from "@/components/LoadingState";
 import { ExportButtons } from "@/components/ExportButtons";
+import { VoiceAndMusicInfo } from "@/components/VoiceAndMusicInfo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
@@ -32,6 +33,10 @@ export default function Home() {
   const [scriptSegments, setScriptSegments] = useState<ScriptSegment[]>([]);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [audioUrl, setAudioUrl] = useState<string>("");
+  const [voiceId, setVoiceId] = useState<string>("");
+  const [voiceName, setVoiceName] = useState<string>("");
+  const [musicUrl, setMusicUrl] = useState<string>("");
+  const [musicTitle, setMusicTitle] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleContinueToDetails = () => {
@@ -69,6 +74,10 @@ export default function Home() {
         
         setScriptSegments(data.segments);
         setMediaItems(data.mediaItems);
+        setVoiceId(data.voiceId);
+        setVoiceName(data.voiceName);
+        setMusicUrl(data.musicUrl || "");
+        setMusicTitle(data.musicTitle || "");
         setProgress(100);
         
         setTimeout(() => {
@@ -104,6 +113,10 @@ export default function Home() {
     setScriptSegments([]);
     setMediaItems([]);
     setAudioUrl("");
+    setVoiceId("");
+    setVoiceName("");
+    setMusicUrl("");
+    setMusicTitle("");
   };
 
   const handleExportScript = () => {
@@ -134,7 +147,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           text: fullText,
-          voiceId: "en-US-terrell",
+          voiceId: voiceId || "en-US-terrell",
         }),
       });
 
@@ -177,6 +190,30 @@ export default function Home() {
       title: "Media List Exported",
       description: "Your stock media list has been downloaded.",
     });
+  };
+
+  const handlePlayMusic = () => {
+    if (musicUrl) {
+      window.open(musicUrl, "_blank");
+      toast({
+        title: "Music Preview",
+        description: "Background music opened in a new tab.",
+      });
+    }
+  };
+
+  const handleDownloadMusic = () => {
+    if (musicUrl && musicTitle) {
+      const a = document.createElement("a");
+      a.href = musicUrl;
+      a.download = `${musicTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.mp3`;
+      a.click();
+      
+      toast({
+        title: "Music Downloaded",
+        description: "Background music has been downloaded.",
+      });
+    }
   };
 
   const getCurrentStepNumber = () => {
@@ -310,6 +347,15 @@ export default function Home() {
               <ScriptTimeline segments={scriptSegments} />
               <MediaRecommendations items={mediaItems} />
             </div>
+            
+            <VoiceAndMusicInfo
+              voiceName={voiceName}
+              musicTitle={musicTitle}
+              musicUrl={musicUrl}
+              onPlayMusic={handlePlayMusic}
+              onDownloadMusic={handleDownloadMusic}
+            />
+
             <Card className="p-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">
