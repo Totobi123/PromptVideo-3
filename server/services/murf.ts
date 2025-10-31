@@ -1,6 +1,20 @@
 const MURF_API_KEY = process.env.MURF_API_KEY;
 const MURF_API_URL = "https://api.murf.ai/v1/speech/generate";
 
+type Mood = "happy" | "casual" | "sad" | "promotional" | "enthusiastic";
+
+export const voiceMoodMapping: Record<Mood, { voiceId: string; voiceName: string }> = {
+  happy: { voiceId: "en-US-terrell", voiceName: "Terrell (Upbeat American)" },
+  casual: { voiceId: "en-US-natalie", voiceName: "Natalie (Casual American)" },
+  sad: { voiceId: "en-US-clint", voiceName: "Clint (Somber American)" },
+  promotional: { voiceId: "en-US-wayne", voiceName: "Wayne (Professional American)" },
+  enthusiastic: { voiceId: "en-US-ken", voiceName: "Ken (Energetic American)" },
+};
+
+export function getVoiceForMood(mood: Mood): { voiceId: string; voiceName: string } {
+  return voiceMoodMapping[mood];
+}
+
 export async function generateVoiceover(text: string, voiceId: string = "en-US-terrell"): Promise<string> {
   if (!MURF_API_KEY) {
     throw new Error("MURF_API_KEY is not configured");
