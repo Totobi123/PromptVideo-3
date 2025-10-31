@@ -49,6 +49,10 @@ export type MediaItem = z.infer<typeof mediaItemSchema>;
 export const generateScriptResponseSchema = z.object({
   segments: z.array(scriptSegmentSchema),
   mediaItems: z.array(mediaItemSchema),
+  voiceId: z.string(),
+  voiceName: z.string(),
+  musicUrl: z.string().optional(),
+  musicTitle: z.string().optional(),
 });
 
 export type GenerateScriptResponse = z.infer<typeof generateScriptResponseSchema>;
