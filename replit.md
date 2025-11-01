@@ -4,8 +4,17 @@
 
 Tivideo is a web application that generates professional video scripts with AI-powered content, mood-based voiceover recommendations, stock media suggestions, and royalty-free background music. Users can create YouTube-style video scripts by describing their video concept, selecting mood and pace preferences, and receiving timestamped scripts with corresponding visual media recommendations, voice selection, and background music. The platform requires no user authentication and focuses on a streamlined, single-page generation workflow.
 
-## Recent Changes (October 31, 2025)
+## Recent Changes
 
+### November 1, 2025
+Enhanced category-driven video generation and timing accuracy:
+- **Category-Specific Video Output**: Each of the 11 video categories (Tech, Cooking, Travel, Education, Gaming, Fitness, Vlog, Review, Tutorial, Entertainment, Gospel) now has comprehensive guidelines that determine the video's structure, tone, media preferences, CTA style, and keywords
+- **Improved Timing Accuracy**: Adjusted words-per-minute calculations to realistic speaking rates (140 WPM normal, 170 WPM fast, 200 WPM very fast) for more accurate video duration
+- **Increased Stock Media Coverage**: Boosted stock media items per segment from 3-5 to 6-10 items for better visual coverage throughout videos
+- **Enhanced Video/Image Mix**: Strengthened AI prompt to ensure proper mix of both videos (60-70%) and images (30-40%) across all segments
+- **Gospel Category Added**: New faith-based content category with appropriate structure, tone, and visual preferences
+
+### October 31, 2025
 Added mood-based voice selection and background music generation:
 - **Mood-Based Voice Selection**: Each mood now automatically selects an appropriate voice from Murf.ai (Happy uses Terrell, Casual uses Natalie, Sad uses Clint, Promotional uses Wayne, Enthusiastic uses Ken)
 - **Background Music Generation**: System automatically selects royalty-free background music from Kevin MacLeod's incompetech.com library based on the selected mood
@@ -46,7 +55,7 @@ Preferred communication style: Simple, everyday language.
 
 ### External Dependencies
 
-**AI Script Generation**: OpenRouter API using the DeepSeek chat model (`deepseek/deepseek-chat-v3.1:free`) for generating video scripts based on user prompts. The system sends detailed prompts including mood, pace, and length requirements, receiving structured JSON responses with timestamped segments.
+**AI Script Generation**: OpenRouter API using GPT-3.5 Turbo for generating video scripts based on user prompts. The system sends detailed prompts including mood, pace, length, audience, and category-specific requirements. Each of the 11 categories (Tech, Cooking, Travel, Education, Gaming, Fitness, Vlog, Review, Tutorial, Entertainment, Gospel) has specific guidelines that shape the video's structure, tone, media preferences, CTA style, and keyword usage. The AI returns structured JSON responses with timestamped segments optimized for the selected category.
 
 **Text-to-Speech**: Murf.ai API for generating voiceover audio. The service uses mood-based voice selection, automatically choosing appropriate voices based on the selected mood (e.g., Terrell for happy, Natalie for casual, Clint for sad).
 
@@ -80,3 +89,12 @@ Preferred communication style: Simple, everyday language.
 **Development Experience**: Integration of Replit-specific plugins (@replit/vite-plugin-runtime-error-modal, cartographer, dev-banner) enhances the development experience within the Replit environment.
 
 **Type Safety**: Comprehensive TypeScript usage across frontend and backend with Zod schemas for runtime validation ensures type safety at API boundaries and reduces runtime errors.
+
+**Category-Driven Content**: The video category selection is not merely a tag but fundamentally shapes the entire video output. Each category has dedicated guidelines defining:
+- Script structure and narrative flow specific to the content type
+- Appropriate tone and language style for the category
+- Visual media preferences tailored to the category's needs
+- CTA (Call-to-Action) styles that resonate with the category's audience
+- Category-relevant keywords and terminology
+
+This ensures that a Tech video follows a different structure and uses different visual elements than a Cooking video, creating more authentic and effective content for each category.

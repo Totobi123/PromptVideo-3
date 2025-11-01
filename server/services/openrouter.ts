@@ -53,6 +53,86 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
     gospel: "faith-based content, spiritual messages, or religious teachings",
   };
 
+  const categoryGuidelines = {
+    tech: {
+      structure: "Hook with problem/innovation → Explanation → Features/Benefits → Conclusion",
+      tone: "Professional, informative, clear technical explanations",
+      mediaPreference: "Product shots, screen recordings, tech demos, close-ups of devices",
+      ctaFocus: "Subscribe for tech updates, like if helpful, comment questions",
+      keywords: "specs, features, performance, innovation, technology",
+    },
+    cooking: {
+      structure: "Dish introduction → Ingredients overview → Step-by-step process → Final presentation",
+      tone: "Warm, inviting, encouraging, appetizing descriptions",
+      mediaPreference: "Food close-ups, cooking process shots, ingredient displays, finished dish beauty shots",
+      ctaFocus: "Subscribe for recipes, like if you'll try it, comment your variations",
+      keywords: "recipe, ingredients, delicious, easy, homemade, cooking",
+    },
+    travel: {
+      structure: "Destination introduction → Key attractions → Local culture/tips → Call to adventure",
+      tone: "Adventurous, inspiring, descriptive, wanderlust-inducing",
+      mediaPreference: "Scenic landscapes, local culture, landmarks, street scenes, aerial views",
+      ctaFocus: "Subscribe for travel guides, like if you want to visit, comment your experiences",
+      keywords: "destination, explore, adventure, culture, travel tips, journey",
+    },
+    education: {
+      structure: "Question/Topic → Core concept explanation → Examples → Key takeaways",
+      tone: "Clear, patient, structured, encouraging learning",
+      mediaPreference: "Diagrams, educational graphics, real-world examples, demonstration visuals",
+      ctaFocus: "Subscribe to learn more, like if this helped, comment questions",
+      keywords: "learn, understand, concept, explained, educational, knowledge",
+    },
+    gaming: {
+      structure: "Game intro → Gameplay highlights → Tips/strategies → Verdict/recommendation",
+      tone: "Energetic, excited, relatable to gamers, insider language",
+      mediaPreference: "Gameplay footage, character shots, action sequences, gaming setups",
+      ctaFocus: "Subscribe for gaming content, like for more, comment your gameplay",
+      keywords: "gaming, gameplay, epic, strategy, level, multiplayer",
+    },
+    fitness: {
+      structure: "Fitness goal → Exercise demonstration → Form tips → Motivation/results",
+      tone: "Motivational, supportive, health-focused, empowering",
+      mediaPreference: "Exercise demonstrations, fitness activities, healthy lifestyle, gym/outdoor workouts",
+      ctaFocus: "Subscribe for workouts, like if you're motivated, comment your progress",
+      keywords: "fitness, workout, health, exercise, strength, wellness",
+    },
+    vlog: {
+      structure: "Personal intro → Daily activities/story → Reflections → Personal sign-off",
+      tone: "Authentic, personal, conversational, relatable",
+      mediaPreference: "Lifestyle shots, personal moments, daily activities, behind-the-scenes",
+      ctaFocus: "Subscribe to follow journey, like if you relate, comment your thoughts",
+      keywords: "life, daily, personal, story, experience, sharing",
+    },
+    review: {
+      structure: "Product intro → Features analysis → Pros & Cons → Final recommendation",
+      tone: "Honest, balanced, detailed, consumer-focused",
+      mediaPreference: "Product shots, comparison visuals, feature demonstrations, usage scenarios",
+      ctaFocus: "Subscribe for reviews, like if helpful, comment your experience",
+      keywords: "review, pros, cons, worth it, honest, recommendation",
+    },
+    tutorial: {
+      structure: "What you'll learn → Step 1 → Step 2 → Step 3 → Results/Summary",
+      tone: "Instructional, clear, step-by-step, encouraging",
+      mediaPreference: "Step-by-step visuals, process shots, before/after, how-to demonstrations",
+      ctaFocus: "Subscribe for tutorials, like if this helped, comment your results",
+      keywords: "how to, tutorial, step-by-step, guide, learn, easy",
+    },
+    entertainment: {
+      structure: "Attention-grabbing hook → Entertaining content → Callbacks/punchlines → Strong outro",
+      tone: "Fun, engaging, humorous, entertaining",
+      mediaPreference: "Dynamic shots, expressive visuals, entertaining scenes, varied content",
+      ctaFocus: "Subscribe for entertainment, smash like, comment your favorite part",
+      keywords: "fun, amazing, hilarious, entertaining, awesome, incredible",
+    },
+    gospel: {
+      structure: "Scripture/Message intro → Spiritual teaching → Application to life → Inspirational close",
+      tone: "Inspirational, reverent, hopeful, compassionate",
+      mediaPreference: "Peaceful nature scenes, worship settings, contemplative visuals, uplifting imagery",
+      ctaFocus: "Subscribe for faith content, like to share hope, comment your testimony",
+      keywords: "faith, hope, blessed, spiritual, grace, testimony",
+    },
+  };
+
   let targetSegments = Math.max(3, Math.min(6, Math.round(lengthInSeconds / 25)));
   let avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
   
@@ -70,6 +150,11 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   const paceWordsPerSecond = wordsPerSecond[request.pace];
   const wordsPerSegment = Math.ceil(avgSegmentDuration * paceWordsPerSecond);
   const totalWords = Math.ceil(lengthInSeconds * paceWordsPerSecond);
+
+  const categoryGuide = categoryGuidelines[request.category as keyof typeof categoryGuidelines];
+  if (!categoryGuide) {
+    throw new Error(`Invalid category: ${request.category}`);
+  }
 
   const systemPrompt = `You are a professional YouTube video script writer and SEO expert. Generate a complete video production package.
 
@@ -151,7 +236,18 @@ CRITICAL TIMING RULES:
    
 3. AUDIENCE: Tailor language and examples for ${request.audience}
 
-4. CATEGORY: Include ${request.category}-specific terminology and references
+4. CATEGORY-SPECIFIC REQUIREMENTS - CRITICAL: The ${request.category} category MUST shape your entire output:
+   STRUCTURE: Follow this flow → ${categoryGuide.structure}
+   TONE: Maintain ${categoryGuide.tone}
+   MEDIA DESCRIPTIONS: Focus on ${categoryGuide.mediaPreference}
+   CTA STYLE: Use CTAs like: ${categoryGuide.ctaFocus}
+   KEYWORDS: Include these types of words: ${categoryGuide.keywords}
+   
+   Example: For ${request.category} videos:
+   - Script should follow the ${request.category} structure above
+   - Media items should prioritize ${categoryGuide.mediaPreference}
+   - CTAs should align with ${categoryGuide.ctaFocus}
+   - Language should match ${categoryGuide.tone}
 
 5. PACE:
    - fast: Short sentences (5-8 words), energetic language
