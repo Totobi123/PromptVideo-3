@@ -27,7 +27,7 @@ export async function searchPexelsMedia(query: string, type: "image" | "video"):
 
   try {
     if (type === "image") {
-      const response = await fetch(`${PEXELS_API_URL}/search?query=${encodeURIComponent(query)}&per_page=1`, {
+      const response = await fetch(`${PEXELS_API_URL}/search?query=${encodeURIComponent(query)}&per_page=10`, {
         headers: {
           "Authorization": PEXELS_API_KEY,
         },
@@ -38,22 +38,24 @@ export async function searchPexelsMedia(query: string, type: "image" | "video"):
       }
 
       const data = await response.json();
-      const photo: PexelsPhoto = data.photos?.[0];
+      const photos: PexelsPhoto[] = data.photos || [];
 
-      if (!photo) {
-        // Return a placeholder if no results
+      if (photos.length === 0) {
         return {
           url: "",
           thumbnail: "",
         };
       }
 
+      const randomIndex = Math.floor(Math.random() * photos.length);
+      const photo = photos[randomIndex];
+
       return {
         url: photo.src.large,
         thumbnail: photo.src.medium,
       };
     } else {
-      const response = await fetch(`${PEXELS_VIDEO_API_URL}/search?query=${encodeURIComponent(query)}&per_page=1`, {
+      const response = await fetch(`${PEXELS_VIDEO_API_URL}/search?query=${encodeURIComponent(query)}&per_page=10`, {
         headers: {
           "Authorization": PEXELS_API_KEY,
         },
@@ -64,15 +66,17 @@ export async function searchPexelsMedia(query: string, type: "image" | "video"):
       }
 
       const data = await response.json();
-      const video: PexelsVideo = data.videos?.[0];
+      const videos: PexelsVideo[] = data.videos || [];
 
-      if (!video) {
+      if (videos.length === 0) {
         return {
           url: "",
           thumbnail: "",
         };
       }
 
+      const randomIndex = Math.floor(Math.random() * videos.length);
+      const video = videos[randomIndex];
       const videoFile = video.video_files.find(f => f.quality === "hd") || video.video_files[0];
 
       return {
@@ -82,7 +86,6 @@ export async function searchPexelsMedia(query: string, type: "image" | "video"):
     }
   } catch (error) {
     console.error("Error fetching Pexels media:", error);
-    // Return empty on error to allow the app to continue
     return {
       url: "",
       thumbnail: "",
