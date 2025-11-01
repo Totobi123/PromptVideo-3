@@ -24,7 +24,7 @@ export const generateScriptRequestSchema = z.object({
   pace: z.enum(["normal", "fast", "very_fast"]),
   length: z.number().positive(),
   audience: z.enum(["kids", "teens", "adults", "professionals", "general"]),
-  category: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment"]),
+  category: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment", "gospel"]),
 });
 
 export type GenerateScriptRequest = z.infer<typeof generateScriptRequestSchema>;

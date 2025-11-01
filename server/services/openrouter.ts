@@ -50,6 +50,7 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
     review: "product or service evaluations",
     tutorial: "step-by-step guides or how-to content",
     entertainment: "fun, engaging, or comedic content",
+    gospel: "faith-based content, spiritual messages, or religious teachings",
   };
 
   let targetSegments = Math.max(3, Math.min(6, Math.round(lengthInSeconds / 25)));
@@ -61,9 +62,9 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   }
 
   const wordsPerSecond = {
-    normal: 2.5,
-    fast: 3.0,
-    very_fast: 3.5,
+    normal: 2.33,
+    fast: 2.83,
+    very_fast: 3.33,
   };
 
   const paceWordsPerSecond = wordsPerSecond[request.pace];
@@ -159,15 +160,17 @@ CRITICAL TIMING RULES:
 6. EMOTION MARKERS: Add 2-4 per segment marking key words to emphasize/pause
 
 7. VISUALS - CRITICAL: Generate media items to completely cover each segment
-   - MUST use a MIX of videos and images across all segments
-   - Overall: 60-70% should be type "video", 30-40% should be type "image"
-   - Per ${avgSegmentDuration}s segment: generate 3-5 media items
-   - Each media item: 3-10 seconds duration (flexible to fit segment perfectly)
+   - MUST use a MIX of BOTH videos AND images across all segments - DO NOT use only images or only videos
+   - Overall ratio: 60-70% should be type "video", 30-40% should be type "image"
+   - IMPORTANT: Ensure each segment has BOTH video and image types where possible
+   - Per ${avgSegmentDuration}s segment: generate 6-10 media items (increased for better coverage)
+   - Each media item: 2-8 seconds duration (flexible to fit segment perfectly)
    - Media items MUST cover entire segment duration with NO gaps
-   - Sequential timestamps covering full segment (e.g., 0:00-0:05, 0:05-0:12, 0:12-0:20)
+   - Sequential timestamps covering full segment (e.g., 0:00-0:04, 0:04-0:08, 0:08-0:14, 0:14-0:20)
    - Highly detailed, specific descriptions for better stock media search results
    - Mark 1-2 visually striking items per segment as thumbnail candidates
    - Transitions: "cut" for energy, "fade" for smooth, "zoom" for impact
+   - Example for 20s segment: [video 0:00-0:05, image 0:05-0:08, video 0:08-0:13, image 0:13-0:16, video 0:16-0:20]
    
 8. SEO PACKAGE:
    - Title: 60 chars, keyword-rich, click-worthy
@@ -193,8 +196,9 @@ FINAL VERIFICATION CHECKLIST:
 - Created approximately ${targetSegments} segments averaging ${avgSegmentDuration}s each
 - Each segment contains AT LEAST ${wordsPerSegment} words (total script: minimum ${totalWords} words)
 - Voiceover text is long enough to fill segment time when spoken at ${paceWordsPerSecond} words/second
-- Every segment has 3-5 media items with no time gaps
-- Overall media mix is 60-70% videos, 30-40% images`;
+- Every segment has 6-10 media items with no time gaps
+- Overall media mix is 60-70% videos, 30-40% images
+- Each segment contains BOTH video and image types (mixed together)`;
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {

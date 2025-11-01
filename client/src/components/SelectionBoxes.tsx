@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb } from "lucide-react";
+import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church } from "lucide-react";
 
 interface SelectionOption {
   value: string;
@@ -54,6 +54,7 @@ const categoryOptions: SelectionOption[] = [
   { value: "review", label: "Review", icon: <Star className="w-5 h-5" /> },
   { value: "tutorial", label: "Tutorial", icon: <Lightbulb className="w-5 h-5" /> },
   { value: "entertainment", label: "Entertainment", icon: <Play className="w-5 h-5" /> },
+  { value: "gospel", label: "Gospel", icon: <Church className="w-5 h-5" /> },
 ];
 
 export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps) {
