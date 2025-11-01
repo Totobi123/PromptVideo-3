@@ -23,6 +23,8 @@ export const generateScriptRequestSchema = z.object({
   mood: z.enum(["happy", "casual", "sad", "promotional", "enthusiastic"]),
   pace: z.enum(["normal", "fast", "very_fast"]),
   length: z.number().positive(),
+  audience: z.enum(["kids", "teens", "adults", "professionals", "general"]),
+  category: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment"]),
 });
 
 export type GenerateScriptRequest = z.infer<typeof generateScriptRequestSchema>;
@@ -31,6 +33,10 @@ export const scriptSegmentSchema = z.object({
   startTime: z.string(),
   endTime: z.string(),
   text: z.string(),
+  emotionMarkers: z.array(z.object({
+    word: z.string(),
+    emotion: z.enum(["emphasize", "pause", "excited", "calm", "urgent"]),
+  })).optional(),
 });
 
 export type ScriptSegment = z.infer<typeof scriptSegmentSchema>;
@@ -42,6 +48,8 @@ export const mediaItemSchema = z.object({
   description: z.string(),
   url: z.string().optional(),
   thumbnail: z.string().optional(),
+  isThumbnailCandidate: z.boolean().optional(),
+  transition: z.enum(["cut", "fade", "zoom"]).optional(),
 });
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;
@@ -49,6 +57,26 @@ export type MediaItem = z.infer<typeof mediaItemSchema>;
 export const aiScriptResponseSchema = z.object({
   segments: z.array(scriptSegmentSchema),
   mediaItems: z.array(mediaItemSchema),
+  seoPackage: z.object({
+    title: z.string(),
+    description: z.string(),
+    hashtags: z.array(z.string()),
+  }).optional(),
+  chapters: z.array(z.object({
+    timestamp: z.string(),
+    title: z.string(),
+  })).optional(),
+  ctaPlacements: z.array(z.object({
+    timestamp: z.string(),
+    type: z.enum(["subscribe", "like", "comment", "link", "product"]),
+    message: z.string(),
+  })).optional(),
+  musicMixing: z.object({
+    backgroundMusicVolume: z.number(),
+    voiceoverVolume: z.number(),
+    fadeInDuration: z.number(),
+    fadeOutDuration: z.number(),
+  }).optional(),
 });
 
 export const generateScriptResponseSchema = z.object({
@@ -58,6 +86,26 @@ export const generateScriptResponseSchema = z.object({
   voiceName: z.string(),
   musicUrl: z.string().optional(),
   musicTitle: z.string().optional(),
+  seoPackage: z.object({
+    title: z.string(),
+    description: z.string(),
+    hashtags: z.array(z.string()),
+  }).optional(),
+  chapters: z.array(z.object({
+    timestamp: z.string(),
+    title: z.string(),
+  })).optional(),
+  ctaPlacements: z.array(z.object({
+    timestamp: z.string(),
+    type: z.enum(["subscribe", "like", "comment", "link", "product"]),
+    message: z.string(),
+  })).optional(),
+  musicMixing: z.object({
+    backgroundMusicVolume: z.number(),
+    voiceoverVolume: z.number(),
+    fadeInDuration: z.number(),
+    fadeOutDuration: z.number(),
+  }).optional(),
 });
 
 export type GenerateScriptResponse = z.infer<typeof generateScriptResponseSchema>;

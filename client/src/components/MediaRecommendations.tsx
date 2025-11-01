@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Image, Video } from "lucide-react";
+import { Image, Video, Star, Scissors } from "lucide-react";
 
 export interface MediaItem {
   type: "image" | "video";
@@ -9,6 +9,8 @@ export interface MediaItem {
   description: string;
   url?: string;
   thumbnail?: string;
+  isThumbnailCandidate?: boolean;
+  transition?: "cut" | "fade" | "zoom";
 }
 
 interface MediaRecommendationsProps {
@@ -48,12 +50,28 @@ export function MediaRecommendations({ items }: MediaRecommendationsProps) {
               >
                 {item.startTime} - {item.endTime}
               </Badge>
-              <Badge
-                variant="secondary"
-                className="absolute bottom-2 right-2"
-              >
-                {item.type.toUpperCase()}
-              </Badge>
+              <div className="absolute top-2 right-2 flex gap-1">
+                {item.isThumbnailCandidate && (
+                  <Badge
+                    variant="default"
+                    className="bg-yellow-500/90 hover:bg-yellow-500 backdrop-blur-sm gap-1"
+                  >
+                    <Star className="w-3 h-3" />
+                    Thumbnail
+                  </Badge>
+                )}
+              </div>
+              <div className="absolute bottom-2 right-2 flex gap-1">
+                <Badge variant="secondary">
+                  {item.type.toUpperCase()}
+                </Badge>
+                {item.transition && (
+                  <Badge variant="outline" className="gap-1">
+                    <Scissors className="w-3 h-3" />
+                    {item.transition}
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="p-4">
               <p className="text-sm text-foreground line-clamp-2">

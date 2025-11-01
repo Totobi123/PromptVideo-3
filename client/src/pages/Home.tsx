@@ -8,6 +8,8 @@ import { MediaRecommendations, type MediaItem } from "@/components/MediaRecommen
 import { LoadingState } from "@/components/LoadingState";
 import { ExportButtons } from "@/components/ExportButtons";
 import { VoiceAndMusicInfo } from "@/components/VoiceAndMusicInfo";
+import { SEOPackage } from "@/components/SEOPackage";
+import { ProductionInfo } from "@/components/ProductionInfo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
@@ -29,6 +31,8 @@ export default function Home() {
   const [mood, setMood] = useState("");
   const [pace, setPace] = useState("");
   const [length, setLength] = useState("");
+  const [audience, setAudience] = useState("");
+  const [category, setCategory] = useState("");
   const [progress, setProgress] = useState(0);
   const [scriptSegments, setScriptSegments] = useState<ScriptSegment[]>([]);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -37,6 +41,26 @@ export default function Home() {
   const [voiceName, setVoiceName] = useState<string>("");
   const [musicUrl, setMusicUrl] = useState<string>("");
   const [musicTitle, setMusicTitle] = useState<string>("");
+  const [seoPackage, setSeoPackage] = useState<{
+    title: string;
+    description: string;
+    hashtags: string[];
+  } | null>(null);
+  const [chapters, setChapters] = useState<Array<{
+    timestamp: string;
+    title: string;
+  }>>([]);
+  const [ctaPlacements, setCtaPlacements] = useState<Array<{
+    timestamp: string;
+    type: "subscribe" | "like" | "comment" | "link" | "product";
+    message: string;
+  }>>([]);
+  const [musicMixing, setMusicMixing] = useState<{
+    backgroundMusicVolume: number;
+    voiceoverVolume: number;
+    fadeInDuration: number;
+    fadeOutDuration: number;
+  } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleContinueToDetails = () => {
@@ -46,7 +70,7 @@ export default function Home() {
   };
 
   const handleGenerate = async () => {
-    if (mood && pace && length) {
+    if (mood && pace && length && audience && category) {
       setCurrentStep("generating");
       setProgress(0);
       setIsGenerating(true);
@@ -62,6 +86,8 @@ export default function Home() {
             mood,
             pace,
             length: parseInt(length),
+            audience,
+            category,
           }),
         });
 
@@ -78,6 +104,10 @@ export default function Home() {
         setVoiceName(data.voiceName);
         setMusicUrl(data.musicUrl || "");
         setMusicTitle(data.musicTitle || "");
+        setSeoPackage(data.seoPackage || null);
+        setChapters(data.chapters || []);
+        setCtaPlacements(data.ctaPlacements || []);
+        setMusicMixing(data.musicMixing || null);
         setProgress(100);
         
         setTimeout(() => {
@@ -109,6 +139,8 @@ export default function Home() {
     setMood("");
     setPace("");
     setLength("");
+    setAudience("");
+    setCategory("");
     setProgress(0);
     setScriptSegments([]);
     setMediaItems([]);
@@ -117,6 +149,10 @@ export default function Home() {
     setVoiceName("");
     setMusicUrl("");
     setMusicTitle("");
+    setSeoPackage(null);
+    setChapters([]);
+    setCtaPlacements([]);
+    setMusicMixing(null);
   };
 
   const handleExportScript = () => {
@@ -282,6 +318,8 @@ export default function Home() {
                   Select the mood, pace, and length for your video
                 </p>
               </div>
+              <SelectionBoxes type="audience" selected={audience} onSelect={setAudience} />
+              <SelectionBoxes type="category" selected={category} onSelect={setCategory} />
               <SelectionBoxes type="mood" selected={mood} onSelect={setMood} />
               <SelectionBoxes type="pace" selected={pace} onSelect={setPace} />
               <SelectionBoxes type="length" selected={length} onSelect={setLength} />
@@ -297,7 +335,7 @@ export default function Home() {
                 <Button
                   data-testid="button-generate-script"
                   onClick={handleGenerate}
-                  disabled={!mood || !pace || !length}
+                  disabled={!mood || !pace || !length || !audience || !category}
                   size="lg"
                   className="gap-2"
                 >
@@ -356,6 +394,18 @@ export default function Home() {
               onPlayMusic={handlePlayMusic}
               onDownloadMusic={handleDownloadMusic}
             />
+
+            {seoPackage && (
+              <SEOPackage seoPackage={seoPackage} />
+            )}
+
+            {(chapters.length > 0 || ctaPlacements.length > 0 || musicMixing) && (
+              <ProductionInfo
+                chapters={chapters}
+                ctaPlacements={ctaPlacements}
+                musicMixing={musicMixing || undefined}
+              />
+            )}
 
             <Card className="p-6">
               <div className="space-y-4">

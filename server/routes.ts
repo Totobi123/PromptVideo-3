@@ -41,6 +41,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         voiceName: voiceInfo.voiceName,
         musicUrl: musicInfo?.url,
         musicTitle: musicInfo?.title,
+        seoPackage: result.seoPackage,
+        chapters: result.chapters,
+        ctaPlacements: result.ctaPlacements,
+        musicMixing: result.musicMixing,
       });
     } catch (error) {
       console.error("Error generating script:", error);

@@ -4,7 +4,14 @@ import { aiScriptResponseSchema } from "@shared/schema";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-export async function generateVideoScript(request: GenerateScriptRequest): Promise<{ segments: ScriptSegment[], mediaItems: MediaItem[] }> {
+export async function generateVideoScript(request: GenerateScriptRequest): Promise<{ 
+  segments: ScriptSegment[], 
+  mediaItems: MediaItem[],
+  seoPackage?: any,
+  chapters?: any[],
+  ctaPlacements?: any[],
+  musicMixing?: any
+}> {
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
@@ -24,12 +31,35 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
     very_fast: "very fast-paced with extremely concise sentences. Use dynamic, high-energy language with rapid-fire delivery and minimal pauses",
   };
 
-  const systemPrompt = `You are a professional YouTube video script writer. Generate a timestamped video script based on the user's requirements.
+  const audienceDescriptions = {
+    kids: "simple language, fun examples, educational tone",
+    teens: "relatable content, trending topics, casual but engaging",
+    adults: "mature content, balanced tone, informative",
+    professionals: "technical accuracy, formal tone, industry-specific",
+    general: "accessible to everyone, clear explanations, broad appeal",
+  };
+
+  const categoryDescriptions = {
+    tech: "technology reviews, tutorials, or news",
+    cooking: "recipes, cooking techniques, or food content",
+    travel: "destination guides, travel tips, or vlogs",
+    education: "learning content, explanations, or tutorials",
+    gaming: "gameplay, reviews, or gaming culture",
+    fitness: "workouts, health tips, or wellness content",
+    vlog: "personal stories, daily life, or experiences",
+    review: "product or service evaluations",
+    tutorial: "step-by-step guides or how-to content",
+    entertainment: "fun, engaging, or comedic content",
+  };
+
+  const systemPrompt = `You are a professional YouTube video script writer and SEO expert. Generate a complete video production package.
 
 REQUIREMENTS:
 - Video length: ${lengthInSeconds} seconds
 - Mood: ${moodDescriptions[request.mood]}
 - Pace: ${paceDescriptions[request.pace]}
+- Target Audience: ${audienceDescriptions[request.audience]}
+- Category: ${categoryDescriptions[request.category]}
 
 OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {
@@ -37,7 +67,11 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
     {
       "startTime": "00:00",
       "endTime": "00:15",
-      "text": "Opening narration text..."
+      "text": "Opening narration...",
+      "emotionMarkers": [
+        {"word": "amazing", "emotion": "emphasize"},
+        {"word": "pause here", "emotion": "pause"}
+      ]
     }
   ],
   "mediaItems": [
@@ -45,36 +79,60 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
       "type": "image",
       "startTime": "00:00",
       "endTime": "00:05",
-      "description": "Detailed description for finding stock media"
-    },
-    {
-      "type": "video",
-      "startTime": "00:05",
-      "endTime": "00:10",
-      "description": "Detailed description for finding stock media"
-    },
-    {
-      "type": "image",
-      "startTime": "00:10",
-      "endTime": "00:15",
-      "description": "Detailed description for finding stock media"
+      "description": "Specific, detailed description for stock search",
+      "isThumbnailCandidate": true,
+      "transition": "fade"
     }
-  ]
+  ],
+  "seoPackage": {
+    "title": "Compelling 60-char YouTube title",
+    "description": "SEO-optimized description with keywords",
+    "hashtags": ["#relevant", "#hashtags", "#5-8total"]
+  },
+  "chapters": [
+    {"timestamp": "00:00", "title": "Introduction"},
+    {"timestamp": "00:15", "title": "Main Content"}
+  ],
+  "ctaPlacements": [
+    {"timestamp": "00:10", "type": "subscribe", "message": "If you're enjoying this, subscribe!"},
+    {"timestamp": "00:50", "type": "like", "message": "Hit that like button!"}
+  ],
+  "musicMixing": {
+    "backgroundMusicVolume": 20,
+    "voiceoverVolume": 100,
+    "fadeInDuration": 2,
+    "fadeOutDuration": 3
+  }
 }
 
 RULES:
-1. Create 3-6 segments that add up to exactly ${lengthInSeconds} seconds
-2. Each segment should be 10-30 seconds long
-3. Write natural, engaging narration that matches the mood and pace
-4. IMPORTANT FOR PACE:
-   - For "fast" pace: Use shorter sentences (5-8 words). Keep it energetic and concise.
-   - For "very fast" pace: Use very short sentences (3-6 words). Make it punchy and dynamic.
-5. IMPORTANT FOR VISUALS: Generate 2-3 media items per segment for dynamic visual variety
-   - Each media item should display for 5-15 seconds
-   - Media items within a segment should have sequential timestamps that cover the segment's duration
-   - Use detailed, specific descriptions for better stock media search results
-6. Alternate between "image" and "video" types for visual variety
-7. Return ONLY the JSON object, no additional text or markdown`;
+1. SCRIPT: Create 3-6 segments totaling ${lengthInSeconds} seconds (10-30s each)
+2. AUDIENCE: Tailor language and examples for ${request.audience}
+3. CATEGORY: Include ${request.category}-specific terminology and references
+4. PACE:
+   - fast: Short sentences (5-8 words), energetic language
+   - very_fast: Very short sentences (3-6 words), punchy, dynamic
+5. EMOTION MARKERS: Add 2-4 per segment marking key words to emphasize/pause
+6. VISUALS: Generate 2-3 media items per segment
+   - 5-15 seconds each
+   - Sequential timestamps
+   - Detailed descriptions for better search results
+   - Mark 1-2 items as thumbnail candidates (visually striking)
+   - Transitions: "cut" for energy, "fade" for smooth, "zoom" for impact
+7. SEO PACKAGE:
+   - Title: 60 chars, keyword-rich, click-worthy
+   - Description: 150-200 chars, includes main keywords
+   - Hashtags: 5-8 relevant, trending-aware
+8. CHAPTERS: Create 3-5 YouTube chapters with timestamps
+9. CTA PLACEMENTS: Add 2-4 calls-to-action at strategic moments
+   - Types: subscribe, like, comment, link, product
+   - Natural timing (not in first 5 seconds)
+10. MUSIC MIXING:
+    - backgroundMusicVolume: 15-30 (percentage)
+    - voiceoverVolume: 100
+    - fadeInDuration: 2-4 seconds
+    - fadeOutDuration: 2-5 seconds
+11. Return ONLY the JSON object, no markdown`;
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {
@@ -94,11 +152,11 @@ RULES:
           },
           {
             role: "user",
-            content: `Create a ${lengthInSeconds}-second video script about: ${request.prompt}`,
+            content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}`,
           },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 3000,
       }),
     });
 
@@ -139,6 +197,10 @@ RULES:
     return {
       segments: validationResult.data.segments,
       mediaItems: validationResult.data.mediaItems,
+      seoPackage: validationResult.data.seoPackage,
+      chapters: validationResult.data.chapters,
+      ctaPlacements: validationResult.data.ctaPlacements,
+      musicMixing: validationResult.data.musicMixing,
     };
   } catch (error) {
     console.error("Error generating script:", error);

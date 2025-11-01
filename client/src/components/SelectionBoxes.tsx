@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock } from "lucide-react";
+import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb } from "lucide-react";
 
 interface SelectionOption {
   value: string;
@@ -8,7 +8,7 @@ interface SelectionOption {
 }
 
 interface SelectionBoxesProps {
-  type: "mood" | "pace" | "length";
+  type: "mood" | "pace" | "length" | "audience" | "category";
   selected: string;
   onSelect: (value: string) => void;
 }
@@ -35,9 +35,41 @@ const lengthOptions: SelectionOption[] = [
   { value: "300", label: "5 minutes", icon: <Clock className="w-5 h-5" /> },
 ];
 
+const audienceOptions: SelectionOption[] = [
+  { value: "kids", label: "Kids", icon: <Baby className="w-5 h-5" /> },
+  { value: "teens", label: "Teens", icon: <Users className="w-5 h-5" /> },
+  { value: "adults", label: "Adults", icon: <User className="w-5 h-5" /> },
+  { value: "professionals", label: "Professionals", icon: <Briefcase className="w-5 h-5" /> },
+  { value: "general", label: "General Audience", icon: <Globe className="w-5 h-5" /> },
+];
+
+const categoryOptions: SelectionOption[] = [
+  { value: "tech", label: "Tech", icon: <Monitor className="w-5 h-5" /> },
+  { value: "cooking", label: "Cooking", icon: <ChefHat className="w-5 h-5" /> },
+  { value: "travel", label: "Travel", icon: <Plane className="w-5 h-5" /> },
+  { value: "education", label: "Education", icon: <GraduationCap className="w-5 h-5" /> },
+  { value: "gaming", label: "Gaming", icon: <Gamepad2 className="w-5 h-5" /> },
+  { value: "fitness", label: "Fitness", icon: <Dumbbell className="w-5 h-5" /> },
+  { value: "vlog", label: "Vlog", icon: <Video className="w-5 h-5" /> },
+  { value: "review", label: "Review", icon: <Star className="w-5 h-5" /> },
+  { value: "tutorial", label: "Tutorial", icon: <Lightbulb className="w-5 h-5" /> },
+  { value: "entertainment", label: "Entertainment", icon: <Play className="w-5 h-5" /> },
+];
+
 export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps) {
-  const options = type === "mood" ? moodOptions : type === "pace" ? paceOptions : lengthOptions;
-  const title = type === "mood" ? "Select Mood" : type === "pace" ? "Select Pace" : "Video Length";
+  const options = 
+    type === "mood" ? moodOptions :
+    type === "pace" ? paceOptions :
+    type === "length" ? lengthOptions :
+    type === "audience" ? audienceOptions :
+    categoryOptions;
+  
+  const title = 
+    type === "mood" ? "Select Mood" :
+    type === "pace" ? "Select Pace" :
+    type === "length" ? "Video Length" :
+    type === "audience" ? "Target Audience" :
+    "Video Category";
 
   return (
     <div className="space-y-4">
