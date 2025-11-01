@@ -226,13 +226,20 @@ CRITICAL TIMING RULES:
    - Calculate times precisely so all segments sum to exactly ${lengthInSeconds} seconds
    - Adjust individual segment lengths as needed, but total must equal ${lengthInSeconds}s
 
-2. TEXT LENGTH - CRITICAL: Each segment's text MUST be long enough to fill its time duration when spoken aloud
-   - At ${paceWordsPerSecond} words/second, each ${avgSegmentDuration}s segment needs AT LEAST ${wordsPerSegment} words (minimum)
-   - Total script must contain AT LEAST ${totalWords} words to fill ${lengthInSeconds} seconds
-   - Write complete, detailed, engaging narration - NOT just brief summaries or bullet points
-   - The voiceover duration MUST match the segment timestamps
-   - Example: A 30-second segment at normal pace needs MINIMUM 75 words, NOT 15-20 words
-   - If a segment is 00:00-00:30 (30s), the text must take 30 seconds to speak when read aloud
+2. TEXT LENGTH - CRITICAL - NON-NEGOTIABLE: Each segment's text MUST be long enough to fill its time duration when spoken aloud
+   - STRICT FORMULA: Segment duration (seconds) × ${paceWordsPerSecond} = MINIMUM words required
+   - Each ${avgSegmentDuration}s segment MUST have AT LEAST ${wordsPerSegment} words (THIS IS MANDATORY)
+   - Total script MUST contain AT LEAST ${totalWords} words to fill ${lengthInSeconds} seconds
+   - DO NOT write brief summaries - write FULL, DETAILED, ENGAGING narration with examples and elaboration
+   - The voiceover duration MUST match the segment timestamps EXACTLY
+   
+   EXAMPLES OF CORRECT WORD COUNTS:
+   - 20-second segment: MINIMUM 47 words (20 × ${paceWordsPerSecond})
+   - 24-second segment: MINIMUM 56 words (24 × ${paceWordsPerSecond})
+   - 30-second segment: MINIMUM 70 words (30 × ${paceWordsPerSecond})
+   
+   WARNING: Generating segments with fewer words will cause timing mismatches. A 2-minute video needs ${totalWords}+ words.
+   Count your words in each segment BEFORE returning the JSON to ensure compliance.
    
 3. AUDIENCE: Tailor language and examples for ${request.audience}
 
@@ -287,14 +294,18 @@ CRITICAL TIMING RULES:
     
 12. Return ONLY the JSON object, no markdown
 
-FINAL VERIFICATION CHECKLIST:
-- Total of all segment durations = ${lengthInSeconds} seconds (exact)
-- Created approximately ${targetSegments} segments averaging ${avgSegmentDuration}s each
-- Each segment contains AT LEAST ${wordsPerSegment} words (total script: minimum ${totalWords} words)
-- Voiceover text is long enough to fill segment time when spoken at ${paceWordsPerSecond} words/second
-- Every segment has 6-10 media items with no time gaps
-- Overall media mix is 60-70% videos, 30-40% images
-- Each segment contains BOTH video and image types (mixed together)`;
+FINAL VERIFICATION CHECKLIST - VERIFY BEFORE SUBMITTING:
+✓ Total of all segment durations = ${lengthInSeconds} seconds (exact)
+✓ Created approximately ${targetSegments} segments averaging ${avgSegmentDuration}s each
+✓ WORD COUNT CHECK: Count the words in EACH segment - must be AT LEAST ${wordsPerSegment} words per segment
+✓ TOTAL WORD COUNT: Entire script contains AT LEAST ${totalWords} words (count to verify)
+✓ Calculate: Each segment duration × ${paceWordsPerSecond} words/second = minimum words for that segment
+✓ Voiceover text is long enough to fill segment time when spoken at ${paceWordsPerSecond} words/second
+✓ Every segment has 6-10 media items with no time gaps
+✓ Overall media mix is 60-70% videos, 30-40% images
+✓ Each segment contains BOTH video and image types (mixed together)
+
+CRITICAL: If any segment has fewer than the required words, ADD MORE DETAIL AND ELABORATION to that segment's narration.`;
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {
