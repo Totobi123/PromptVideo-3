@@ -60,11 +60,23 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
     avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
   }
 
+  const wordsPerSecond = {
+    normal: 2.5,
+    fast: 3.0,
+    very_fast: 3.5,
+  };
+
+  const paceWordsPerSecond = wordsPerSecond[request.pace];
+  const wordsPerSegment = Math.ceil(avgSegmentDuration * paceWordsPerSecond);
+  const totalWords = Math.ceil(lengthInSeconds * paceWordsPerSecond);
+
   const systemPrompt = `You are a professional YouTube video script writer and SEO expert. Generate a complete video production package.
 
 REQUIREMENTS:
 - Video length: EXACTLY ${lengthInSeconds} seconds (must be precise)
 - Target: ${targetSegments} segments of approximately ${avgSegmentDuration} seconds each
+- WORD COUNT: Each segment needs at least ${wordsPerSegment} words (total script: minimum ${totalWords} words)
+- Speaking pace: ${paceWordsPerSecond} words per second
 - Mood: ${moodDescriptions[request.mood]}
 - Pace: ${paceDescriptions[request.pace]}
 - Target Audience: ${audienceDescriptions[request.audience]}
@@ -127,18 +139,26 @@ CRITICAL TIMING RULES:
    - Target ${avgSegmentDuration} seconds per segment (can vary ±5 seconds for narrative flow)
    - Calculate times precisely so all segments sum to exactly ${lengthInSeconds} seconds
    - Adjust individual segment lengths as needed, but total must equal ${lengthInSeconds}s
+
+2. TEXT LENGTH - CRITICAL: Each segment's text MUST be long enough to fill its time duration when spoken aloud
+   - At ${paceWordsPerSecond} words/second, each ${avgSegmentDuration}s segment needs AT LEAST ${wordsPerSegment} words (minimum)
+   - Total script must contain AT LEAST ${totalWords} words to fill ${lengthInSeconds} seconds
+   - Write complete, detailed, engaging narration - NOT just brief summaries or bullet points
+   - The voiceover duration MUST match the segment timestamps
+   - Example: A 30-second segment at normal pace needs MINIMUM 75 words, NOT 15-20 words
+   - If a segment is 00:00-00:30 (30s), the text must take 30 seconds to speak when read aloud
    
-2. AUDIENCE: Tailor language and examples for ${request.audience}
+3. AUDIENCE: Tailor language and examples for ${request.audience}
 
-3. CATEGORY: Include ${request.category}-specific terminology and references
+4. CATEGORY: Include ${request.category}-specific terminology and references
 
-4. PACE:
+5. PACE:
    - fast: Short sentences (5-8 words), energetic language
    - very_fast: Very short sentences (3-6 words), punchy, dynamic
    
-5. EMOTION MARKERS: Add 2-4 per segment marking key words to emphasize/pause
+6. EMOTION MARKERS: Add 2-4 per segment marking key words to emphasize/pause
 
-6. VISUALS - CRITICAL: Generate media items to completely cover each segment
+7. VISUALS - CRITICAL: Generate media items to completely cover each segment
    - MUST use a MIX of videos and images across all segments
    - Overall: 60-70% should be type "video", 30-40% should be type "image"
    - Per ${avgSegmentDuration}s segment: generate 3-5 media items
@@ -149,28 +169,30 @@ CRITICAL TIMING RULES:
    - Mark 1-2 visually striking items per segment as thumbnail candidates
    - Transitions: "cut" for energy, "fade" for smooth, "zoom" for impact
    
-7. SEO PACKAGE:
+8. SEO PACKAGE:
    - Title: 60 chars, keyword-rich, click-worthy
    - Description: 150-200 chars, includes main keywords
    - Hashtags: 5-8 relevant, trending-aware
    
-8. CHAPTERS: Create 3-5 YouTube chapters with timestamps
+9. CHAPTERS: Create 3-5 YouTube chapters with timestamps
 
-9. CTA PLACEMENTS: Add 2-4 calls-to-action at strategic moments
-   - Types: subscribe, like, comment, link, product
-   - Natural timing (not in first 5 seconds)
+10. CTA PLACEMENTS: Add 2-4 calls-to-action at strategic moments
+    - Types: subscribe, like, comment, link, product
+    - Natural timing (not in first 5 seconds)
    
-10. MUSIC MIXING:
+11. MUSIC MIXING:
     - backgroundMusicVolume: 15-30 (percentage)
     - voiceoverVolume: 100
     - fadeInDuration: 2-4 seconds
     - fadeOutDuration: 2-5 seconds
     
-11. Return ONLY the JSON object, no markdown
+12. Return ONLY the JSON object, no markdown
 
 FINAL VERIFICATION CHECKLIST:
 - Total of all segment durations = ${lengthInSeconds} seconds (exact)
 - Created approximately ${targetSegments} segments averaging ${avgSegmentDuration}s each
+- Each segment contains AT LEAST ${wordsPerSegment} words (total script: minimum ${totalWords} words)
+- Voiceover text is long enough to fill segment time when spoken at ${paceWordsPerSecond} words/second
 - Every segment has 3-5 media items with no time gaps
 - Overall media mix is 60-70% videos, 30-40% images`;
 
