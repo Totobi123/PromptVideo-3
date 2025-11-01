@@ -325,11 +325,13 @@ CRITICAL: If any segment has fewer than the required words, ADD MORE DETAIL AND 
           },
           {
             role: "user",
-            content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}`,
+            content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}
+
+CRITICAL REMINDER: This ${lengthInSeconds}-second video MUST contain AT LEAST ${totalWords} words total. Each segment must have enough words to fill its duration at ${paceWordsPerSecond} words/second. DO NOT submit short segments - write detailed, elaborate narration.`,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 4000,
+        temperature: 0.5,
+        max_tokens: 8000,
         response_format: { type: "json_object" },
       }),
     });
@@ -369,6 +371,46 @@ CRITICAL: If any segment has fewer than the required words, ADD MORE DETAIL AND 
     if (!validationResult.success) {
       console.error("Schema validation failed:", validationResult.error);
       throw new Error("AI response did not match expected format. Please try again.");
+    }
+
+    // Validate word counts per segment
+    const segments = validationResult.data.segments;
+    let totalWordCount = 0;
+    const segmentIssues: string[] = [];
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const wordCount = segment.text.trim().split(/\s+/).length;
+      totalWordCount += wordCount;
+
+      // Calculate expected duration and minimum words for this segment
+      const startParts = segment.startTime.split(':').map(Number);
+      const endParts = segment.endTime.split(':').map(Number);
+      const startSeconds = startParts[0] * 60 + startParts[1];
+      const endSeconds = endParts[0] * 60 + endParts[1];
+      const segmentDuration = endSeconds - startSeconds;
+      const minimumWords = Math.ceil(segmentDuration * paceWordsPerSecond);
+
+      if (wordCount < minimumWords) {
+        segmentIssues.push(
+          `Segment ${i + 1} (${segment.startTime}-${segment.endTime}, ${segmentDuration}s): has ${wordCount} words, needs ${minimumWords}+ words`
+        );
+      }
+    }
+
+    console.log(`Total word count: ${totalWordCount} words (required: ${totalWords}+)`);
+    
+    if (segmentIssues.length > 0) {
+      console.error("Word count validation failed:", segmentIssues);
+      throw new Error(
+        `Generated script has insufficient word counts. ${segmentIssues.join('; ')}. Please try again.`
+      );
+    }
+
+    if (totalWordCount < totalWords * 0.9) {
+      throw new Error(
+        `Total word count (${totalWordCount}) is significantly below required ${totalWords}. Please try again.`
+      );
     }
 
     return {
