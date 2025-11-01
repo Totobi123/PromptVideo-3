@@ -65,6 +65,7 @@ export type GenerateScriptResponse = z.infer<typeof generateScriptResponseSchema
 export const generateAudioRequestSchema = z.object({
   text: z.string(),
   voiceId: z.string().default("en-US-terrell"),
+  pace: z.enum(["normal", "fast", "very_fast"]).default("normal"),
 });
 
 export type GenerateAudioRequest = z.infer<typeof generateAudioRequestSchema>;

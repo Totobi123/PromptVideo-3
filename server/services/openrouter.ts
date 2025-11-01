@@ -19,9 +19,9 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   };
 
   const paceDescriptions = {
-    normal: "moderate pace with clear pauses",
-    fast: "quick pace with concise sentences",
-    very_fast: "rapid pace with minimal pauses",
+    normal: "moderate pace with clear pauses and natural rhythm",
+    fast: "fast-paced with short, punchy sentences. Use energetic language and quick transitions between ideas",
+    very_fast: "very fast-paced with extremely concise sentences. Use dynamic, high-energy language with rapid-fire delivery and minimal pauses",
   };
 
   const systemPrompt = `You are a professional YouTube video script writer. Generate a timestamped video script based on the user's requirements.
@@ -44,6 +44,18 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
     {
       "type": "image",
       "startTime": "00:00",
+      "endTime": "00:05",
+      "description": "Detailed description for finding stock media"
+    },
+    {
+      "type": "video",
+      "startTime": "00:05",
+      "endTime": "00:10",
+      "description": "Detailed description for finding stock media"
+    },
+    {
+      "type": "image",
+      "startTime": "00:10",
       "endTime": "00:15",
       "description": "Detailed description for finding stock media"
     }
@@ -54,9 +66,15 @@ RULES:
 1. Create 3-6 segments that add up to exactly ${lengthInSeconds} seconds
 2. Each segment should be 10-30 seconds long
 3. Write natural, engaging narration that matches the mood and pace
-4. For each segment, provide a corresponding media item with a detailed description for stock photo/video search
-5. Alternate between "image" and "video" types for visual variety
-6. Return ONLY the JSON object, no additional text or markdown`;
+4. IMPORTANT FOR PACE:
+   - For "fast" pace: Use shorter sentences (5-8 words). Keep it energetic and concise.
+   - For "very fast" pace: Use very short sentences (3-6 words). Make it punchy and dynamic.
+5. IMPORTANT FOR VISUALS: Generate 2-3 media items per segment for dynamic visual variety
+   - Each media item should display for 5-15 seconds
+   - Media items within a segment should have sequential timestamps that cover the segment's duration
+   - Use detailed, specific descriptions for better stock media search results
+6. Alternate between "image" and "video" types for visual variety
+7. Return ONLY the JSON object, no additional text or markdown`;
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {

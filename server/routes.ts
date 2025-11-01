@@ -55,7 +55,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = generateAudioRequestSchema.parse(req.body);
       
-      const audioUrl = await generateVoiceover(validatedData.text, validatedData.voiceId);
+      const audioUrl = await generateVoiceover(
+        validatedData.text, 
+        validatedData.voiceId,
+        validatedData.pace
+      );
       
       res.json({ audioUrl });
     } catch (error) {

@@ -15,10 +15,27 @@ export function getVoiceForMood(mood: Mood): { voiceId: string; voiceName: strin
   return voiceMoodMapping[mood];
 }
 
-export async function generateVoiceover(text: string, voiceId: string = "en-US-terrell"): Promise<string> {
+type Pace = "normal" | "fast" | "very_fast";
+
+function getSpeedForPace(pace: Pace): number {
+  const speedMap: Record<Pace, number> = {
+    normal: 1.0,
+    fast: 1.2,
+    very_fast: 1.5,
+  };
+  return speedMap[pace];
+}
+
+export async function generateVoiceover(
+  text: string, 
+  voiceId: string = "en-US-terrell",
+  pace: Pace = "normal"
+): Promise<string> {
   if (!MURF_API_KEY) {
     throw new Error("MURF_API_KEY is not configured");
   }
+
+  const speed = getSpeedForPace(pace);
 
   try {
     const response = await fetch(MURF_API_URL, {
@@ -31,6 +48,7 @@ export async function generateVoiceover(text: string, voiceId: string = "en-US-t
       body: JSON.stringify({
         text,
         voiceId,
+        speed,
       }),
     });
 

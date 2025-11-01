@@ -148,6 +148,7 @@ export default function Home() {
         body: JSON.stringify({
           text: fullText,
           voiceId: voiceId || "en-US-terrell",
+          pace: pace as "normal" | "fast" | "very_fast",
         }),
       });
 
