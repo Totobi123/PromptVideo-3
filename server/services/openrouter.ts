@@ -144,7 +144,7 @@ RULES:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat",
+        model: "openai/gpt-3.5-turbo",
         messages: [
           {
             role: "system",
@@ -156,7 +156,8 @@ RULES:
           },
         ],
         temperature: 0.7,
-        max_tokens: 3000,
+        max_tokens: 4000,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -174,6 +175,8 @@ RULES:
 
     // Parse the JSON response, handling potential markdown wrapper
     let jsonContent = content.trim();
+    console.log("Raw AI response:", content.substring(0, 500));
+    
     if (jsonContent.startsWith("```json")) {
       jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
     } else if (jsonContent.startsWith("```")) {
@@ -184,6 +187,7 @@ RULES:
     try {
       parsedResult = JSON.parse(jsonContent);
     } catch (parseError) {
+      console.error("Failed to parse JSON:", jsonContent.substring(0, 500));
       throw new Error("AI response was not valid JSON. Please try again.");
     }
 
