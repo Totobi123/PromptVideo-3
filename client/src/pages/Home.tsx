@@ -176,6 +176,16 @@ export default function Home() {
     try {
       const fullText = scriptSegments.map(s => s.text).join(" ");
       
+      // Check if text is too long for Murf API (3000 char limit)
+      if (fullText.length > 3000) {
+        toast({
+          title: "Script Too Long for Audio",
+          description: `Your script is ${fullText.length} characters. Murf's API has a 3000 character limit. Please use the exported script with a different text-to-speech tool.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const response = await fetch("/api/generate-audio", {
         method: "POST",
         headers: {
@@ -189,7 +199,8 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate audio");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate audio");
       }
 
       const data = await response.json();
@@ -206,7 +217,7 @@ export default function Home() {
       console.error("Error generating audio:", error);
       toast({
         title: "Audio Generation Failed",
-        description: "Failed to generate voiceover. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate voiceover. Please try again.",
         variant: "destructive",
       });
     }
