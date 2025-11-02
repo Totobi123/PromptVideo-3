@@ -19,8 +19,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get mood-appropriate voice
       const voiceInfo = getVoiceForMood(validatedData.mood);
       
-      // Fetch background music and stock media URLs in parallel
-      const [musicInfo, mediaItemsWithUrls] = await Promise.all([
+      // Combine all script text for audio generation
+      const fullScriptText = result.segments.map(seg => seg.text).join(" ");
+      
+      // Fetch background music, stock media URLs, and generate audio in parallel
+      const [musicInfo, mediaItemsWithUrls, audioUrl] = await Promise.all([
         searchBackgroundMusic(validatedData.mood),
         Promise.all(
           result.mediaItems.map(async (item) => {
@@ -32,6 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           })
         ),
+        generateVoiceover(fullScriptText, voiceInfo.voiceId, validatedData.pace),
       ]);
 
       res.json({
@@ -39,6 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mediaItems: mediaItemsWithUrls,
         voiceId: voiceInfo.voiceId,
         voiceName: voiceInfo.voiceName,
+        audioUrl,
         musicUrl: musicInfo?.url,
         musicTitle: musicInfo?.title,
         seoPackage: result.seoPackage,

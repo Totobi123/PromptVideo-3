@@ -102,6 +102,7 @@ export default function Home() {
         setMediaItems(data.mediaItems);
         setVoiceId(data.voiceId);
         setVoiceName(data.voiceName);
+        setAudioUrl(data.audioUrl || "");
         setMusicUrl(data.musicUrl || "");
         setMusicTitle(data.musicTitle || "");
         setSeoPackage(data.seoPackage || null);
@@ -172,11 +173,41 @@ export default function Home() {
     });
   };
 
+  const handlePlayVoiceover = () => {
+    if (audioUrl) {
+      window.open(audioUrl, "_blank");
+      toast({
+        title: "Voiceover Preview",
+        description: "Voiceover audio opened in a new tab.",
+      });
+    }
+  };
+
+  const handleDownloadVoiceover = () => {
+    if (audioUrl) {
+      const a = document.createElement("a");
+      a.href = audioUrl;
+      a.download = "voiceover.mp3";
+      a.click();
+      
+      toast({
+        title: "Voiceover Downloaded",
+        description: "Your voiceover has been downloaded.",
+      });
+    }
+  };
+
   const handleExportAudio = async () => {
+    if (audioUrl) {
+      // Audio already generated, just open it
+      handlePlayVoiceover();
+      return;
+    }
+
+    // Fallback: Generate audio if not already generated
     try {
       const fullText = scriptSegments.map(s => s.text).join(" ");
       
-      // Check if text is too long for Murf API (3000 char limit)
       if (fullText.length > 3000) {
         toast({
           title: "Script Too Long for Audio",
@@ -206,7 +237,6 @@ export default function Home() {
       const data = await response.json();
       setAudioUrl(data.audioUrl);
       
-      // Open the audio URL in a new tab
       window.open(data.audioUrl, "_blank");
       
       toast({
@@ -400,8 +430,11 @@ export default function Home() {
             
             <VoiceAndMusicInfo
               voiceName={voiceName}
+              audioUrl={audioUrl}
               musicTitle={musicTitle}
               musicUrl={musicUrl}
+              onPlayVoiceover={handlePlayVoiceover}
+              onDownloadVoiceover={handleDownloadVoiceover}
               onPlayMusic={handlePlayMusic}
               onDownloadMusic={handleDownloadMusic}
             />

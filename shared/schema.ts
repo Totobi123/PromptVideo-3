@@ -84,6 +84,7 @@ export const generateScriptResponseSchema = z.object({
   mediaItems: z.array(mediaItemSchema),
   voiceId: z.string(),
   voiceName: z.string(),
+  audioUrl: z.string().optional(),
   musicUrl: z.string().optional(),
   musicTitle: z.string().optional(),
   seoPackage: z.object({

@@ -4,16 +4,22 @@ import { Mic, Music, Download, Play } from "lucide-react";
 
 interface VoiceAndMusicInfoProps {
   voiceName: string;
+  audioUrl?: string;
   musicTitle?: string;
   musicUrl?: string;
+  onPlayVoiceover?: () => void;
+  onDownloadVoiceover?: () => void;
   onPlayMusic?: () => void;
   onDownloadMusic?: () => void;
 }
 
 export function VoiceAndMusicInfo({
   voiceName,
+  audioUrl,
   musicTitle,
   musicUrl,
+  onPlayVoiceover,
+  onDownloadVoiceover,
   onPlayMusic,
   onDownloadMusic,
 }: VoiceAndMusicInfoProps) {
@@ -33,8 +39,32 @@ export function VoiceAndMusicInfo({
               <Mic className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Selected Voice</p>
-              <p className="text-sm text-muted-foreground">{voiceName}</p>
+              <p className="text-sm font-medium text-foreground">Voiceover</p>
+              <p className="text-sm text-muted-foreground mb-2">{voiceName}</p>
+              {audioUrl && (
+                <div className="flex gap-2">
+                  <Button
+                    data-testid="button-play-voiceover"
+                    onClick={onPlayVoiceover}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Play className="w-3 h-3" />
+                    Preview
+                  </Button>
+                  <Button
+                    data-testid="button-download-voiceover"
+                    onClick={onDownloadVoiceover}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
