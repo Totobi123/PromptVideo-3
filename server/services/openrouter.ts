@@ -136,13 +136,13 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   const targetSegments = Math.max(3, Math.min(8, Math.round(lengthInSeconds / 20)));
   const avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
 
-  // Calculate word counts based on realistic speech timing
-  // 1-minute speech = 100-150 words (conversational average: 125-150)
-  // Slower pace: ~110 words/minute, Fast pace: ~170 words/minute
+  // Calculate word counts based on Murf AI realistic speech timing
+  // Murf AI average: 1 minute ≈ 150 words
+  // Slow/Emotional: 110-130 WPM | Normal/Conversational: 140-160 WPM | Fast/Energetic: 170-190 WPM
   const wordsPerMinute = {
-    normal: 130,      // conversational pace
-    fast: 170,        // fast pace
-    very_fast: 200,   // very fast pace
+    normal: 150,      // Murf AI conversational average
+    fast: 180,        // Murf AI fast/energetic pace
+    very_fast: 190,   // Murf AI upper fast limit
   };
 
   const paceWPM = wordsPerMinute[request.pace];
@@ -157,13 +157,12 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
 
   const systemPrompt = `You are a professional YouTube video script writer and SEO expert. Generate a complete video production package.
 
-IMPORTANT SPEECH TIMING GUIDELINES:
-- A 1-minute speech typically contains 100 to 150 words, with 125-150 words being a common average for a conversational pace
-- Slower pace: ~110 words per minute
-- Normal pace: ~130 words per minute  
-- Fast pace: ~170 words per minute
-- Very fast pace: ~200 words per minute
-- AI speech timing varies, so write enough content to fill the time naturally
+IMPORTANT MURF AI SPEECH TIMING GUIDELINES:
+- Murf AI average: 1 minute ≈ 150 words
+- Slow/Emotional pace: 110-130 words per minute
+- Normal/Conversational pace: 140-160 words per minute (use 150 as target)
+- Fast/Energetic pace: 170-190 words per minute (use 180 as target)
+- Write concise, engaging content that fits these word counts EXACTLY
 
 REQUIREMENTS:
 - Video length: approximately ${lengthInSeconds} seconds (${Math.round(totalMinutes * 10) / 10} minutes)
@@ -218,20 +217,19 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   }
 }
 
-CRITICAL WORD COUNT REQUIREMENT - THIS IS MANDATORY:
-⚠️ YOU MUST GENERATE AT LEAST ${estimatedTotalWords} TOTAL WORDS ⚠️
-Each ${avgSegmentDuration}-second segment MUST contain AT LEAST ${wordsPerSegment} words.
-Do NOT generate brief summaries. Write FULL, DETAILED, ELABORATE narration with examples, explanations, and rich descriptions.
+WORD COUNT TARGET (IMPORTANT):
+Target: approximately ${estimatedTotalWords} total words (${paceWPM} words/minute at ${request.pace} pace)
+Each ${avgSegmentDuration}-second segment should have approximately ${wordsPerSegment} words
+Write concise, engaging content that matches these targets - not too brief, not too verbose.
 
 GUIDELINES:
 1. SCRIPT SEGMENTS: Create engaging, natural narration that flows well
    - Make segments approximately ${avgSegmentDuration} seconds each
-   - Each segment MUST contain AT LEAST ${wordsPerSegment} words (based on ${paceWPM} words/minute)
-   - Total script MUST contain AT LEAST ${estimatedTotalWords} words to fill ${lengthInSeconds} seconds
-   - Write FULL, DETAILED, ENGAGING content with examples and elaboration
-   - Add specific details, stories, explanations, and descriptions to reach the word count
-   - DO NOT write short, brief segments - expand every idea with rich detail
-   - Remember: at ${request.pace} pace (${paceWPM} words/min), you need SUBSTANTIAL content to fill the time
+   - Each segment should contain approximately ${wordsPerSegment} words (based on ${paceWPM} words/minute)
+   - Total script should be approximately ${estimatedTotalWords} words to fill ${lengthInSeconds} seconds
+   - Write engaging, well-paced content - concise but informative
+   - Focus on quality over quantity - every word should add value
+   - Remember: at ${request.pace} pace (${paceWPM} words/min), aim for ${estimatedTotalWords} total words
    
 2. CATEGORY STRUCTURE: Follow the ${request.category} category structure
    - Structure: ${categoryGuide.structure}
@@ -285,12 +283,10 @@ GUIDELINES:
             role: "user",
             content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}
 
-⚠️ CRITICAL REQUIREMENT - DO NOT IGNORE ⚠️
-At ${request.pace} pace (${paceWPM} words/minute), you MUST generate AT LEAST ${estimatedTotalWords} total words to fill ${lengthInSeconds} seconds.
-Each segment needs AT LEAST ${wordsPerSegment} words.
+TARGET: At ${request.pace} pace (${paceWPM} words/minute), aim for approximately ${estimatedTotalWords} total words to fill ${lengthInSeconds} seconds.
+Each segment should be approximately ${wordsPerSegment} words.
 
-COUNT YOUR WORDS before submitting. If any segment has fewer than ${wordsPerSegment} words, ADD MORE DETAIL, EXAMPLES, and ELABORATION.
-DO NOT submit brief summaries. Write FULL, DETAILED, ENGAGING narration that actually fills the time.
+Write concise, engaging narration that matches this word count - not too brief, not too verbose. Focus on quality and pacing.
 
 Generate a complete script with engaging narration, stock media recommendations, SEO package, chapters, CTAs, and music mixing recommendations.`,
           },
