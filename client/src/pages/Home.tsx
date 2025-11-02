@@ -177,7 +177,7 @@ export default function Home() {
           
           toast({
             title: "Script Generated!",
-            description: "Your video script is ready with stock media recommendations.",
+            description: `Your video script is ready with ${mediaSource === "ai" ? "AI-generated images" : "stock media recommendations"}.`,
           });
         }, 500);
       } catch (error) {
@@ -549,7 +549,7 @@ export default function Home() {
         {currentStep === "generating" && (
           <div className="max-w-2xl mx-auto">
             <LoadingState
-              message="AI is generating your video script with stock media..."
+              message={`AI is generating your video script with ${mediaSource === "ai" ? "AI-generated images" : "stock media"}...`}
               progress={progress}
             />
           </div>
