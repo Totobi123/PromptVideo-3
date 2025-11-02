@@ -12,7 +12,7 @@ interface PromptInputProps {
 export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
   const [charCount, setCharCount] = useState(value.length);
   const [wordCount, setWordCount] = useState(0);
-  const [showWordWarning, setShowWordWarning] = useState(false);
+  const [showCharWarning, setShowCharWarning] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -27,7 +27,7 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
     const words = value.trim().split(/\s+/).filter(word => word.length > 0);
     const count = words.length;
     setWordCount(count);
-    setShowWordWarning(value.trim().length > 0 && count < 10);
+    setShowCharWarning(value.trim().length > 0 && value.trim().length < 10);
   }, [value]);
 
   return (
@@ -38,12 +38,7 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
         </label>
         <div className="flex items-center gap-3">
           <span 
-            className={cn(
-              "text-xs font-medium",
-              wordCount < 10 && value.trim().length > 0 
-                ? "text-destructive" 
-                : "text-muted-foreground"
-            )}
+            className="text-xs font-medium text-muted-foreground"
             data-testid="text-word-count"
           >
             {wordCount} {wordCount === 1 ? 'word' : 'words'}
@@ -61,10 +56,10 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
         placeholder="Describe your video in detail... For example: 'Create a 2-minute educational video about the life cycle of butterflies, targeting children aged 8-12. Include colorful visuals and a cheerful tone.'"
         className={cn(
           "min-h-[160px] text-base bg-card resize-none focus-visible:ring-primary",
-          showWordWarning ? "border-destructive" : "border-border"
+          showCharWarning ? "border-destructive" : "border-border"
         )}
       />
-      {showWordWarning && (
+      {showCharWarning && (
         <div 
           className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20"
           data-testid="warning-word-count"
@@ -75,7 +70,7 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
           </p>
         </div>
       )}
-      {!showWordWarning && (
+      {!showCharWarning && (
         <p className="text-xs text-muted-foreground">
           Be as detailed as possible for better results. Include topic, target audience, tone, and key points.
         </p>
