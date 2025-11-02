@@ -71,7 +71,7 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
         >
           <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
           <p className="text-xs text-destructive">
-            Please add at least 10 words to your description for better results. More detail helps create a more accurate video script!
+            Please add at least 10 characters to your description for better results. More detail helps create a more accurate video script!
           </p>
         </div>
       )}
