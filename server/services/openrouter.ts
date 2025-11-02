@@ -136,6 +136,20 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   const targetSegments = Math.max(3, Math.min(8, Math.round(lengthInSeconds / 20)));
   const avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
 
+  // Calculate word counts based on realistic speech timing
+  // 1-minute speech = 100-150 words (conversational average: 125-150)
+  // Slower pace: ~110 words/minute, Fast pace: ~170 words/minute
+  const wordsPerMinute = {
+    normal: 130,      // conversational pace
+    fast: 170,        // fast pace
+    very_fast: 200,   // very fast pace
+  };
+
+  const paceWPM = wordsPerMinute[request.pace];
+  const totalMinutes = lengthInSeconds / 60;
+  const estimatedTotalWords = Math.round(totalMinutes * paceWPM);
+  const wordsPerSegment = Math.round(estimatedTotalWords / targetSegments);
+
   const categoryGuide = categoryGuidelines[request.category as keyof typeof categoryGuidelines];
   if (!categoryGuide) {
     throw new Error(`Invalid category: ${request.category}`);
@@ -143,9 +157,19 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
 
   const systemPrompt = `You are a professional YouTube video script writer and SEO expert. Generate a complete video production package.
 
+IMPORTANT SPEECH TIMING GUIDELINES:
+- A 1-minute speech typically contains 100 to 150 words, with 125-150 words being a common average for a conversational pace
+- Slower pace: ~110 words per minute
+- Normal pace: ~130 words per minute  
+- Fast pace: ~170 words per minute
+- Very fast pace: ~200 words per minute
+- AI speech timing varies, so write enough content to fill the time naturally
+
 REQUIREMENTS:
-- Video length: approximately ${lengthInSeconds} seconds
+- Video length: approximately ${lengthInSeconds} seconds (${Math.round(totalMinutes * 10) / 10} minutes)
 - Create ${targetSegments} segments of roughly ${avgSegmentDuration} seconds each
+- Target word count: approximately ${estimatedTotalWords} total words (${paceWPM} words/minute at ${request.pace} pace)
+- Each segment should have approximately ${wordsPerSegment} words
 - Mood: ${moodDescriptions[request.mood]}
 - Pace: ${paceDescriptions[request.pace]}
 - Target Audience: ${audienceDescriptions[request.audience]}
@@ -197,8 +221,10 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 GUIDELINES:
 1. SCRIPT SEGMENTS: Create engaging, natural narration that flows well
    - Make segments approximately ${avgSegmentDuration} seconds each
+   - Each segment should contain approximately ${wordsPerSegment} words (based on ${paceWPM} words/minute)
+   - Total script should contain approximately ${estimatedTotalWords} words to fill ${lengthInSeconds} seconds
    - Write full, detailed, engaging content (not brief summaries)
-   - Total duration should be close to ${lengthInSeconds} seconds
+   - Remember: at ${request.pace} pace (${paceWPM} words/min), you need substantial content to fill the time
    
 2. CATEGORY STRUCTURE: Follow the ${request.category} category structure
    - Structure: ${categoryGuide.structure}
@@ -251,6 +277,8 @@ GUIDELINES:
           {
             role: "user",
             content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}
+
+REMINDER: At ${request.pace} pace (${paceWPM} words/minute), you need approximately ${estimatedTotalWords} total words to fill ${lengthInSeconds} seconds. Write ${wordsPerSegment} words per segment.
 
 Generate a complete script with engaging narration, stock media recommendations, SEO package, chapters, CTAs, and music mixing recommendations.`,
           },
