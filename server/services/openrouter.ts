@@ -210,8 +210,8 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
     {"timestamp": "00:10", "type": "subscribe", "message": "If you're enjoying this, subscribe!"}
   ],
   "musicMixing": {
-    "backgroundMusicVolume": 20,
-    "voiceoverVolume": 100,
+    "backgroundMusicVolume": 0.2,
+    "voiceoverVolume": 1.0,
     "fadeInDuration": 2,
     "fadeOutDuration": 3
   }
@@ -255,9 +255,9 @@ GUIDELINES:
    - CTA Style: ${categoryGuide.ctaFocus}
    - Types: subscribe, like, comment, link, product
    
-7. MUSIC MIXING:
-   - backgroundMusicVolume: 15-30
-   - voiceoverVolume: 100
+7. MUSIC MIXING (volumes must be 0.0 to 1.0):
+   - backgroundMusicVolume: 0.15-0.30 (background music volume, 0.0 = silent, 1.0 = full)
+   - voiceoverVolume: 1.0 (voiceover volume, keep at 1.0 for clarity)
    - fadeInDuration: 2-4 seconds
    - fadeOutDuration: 2-5 seconds
 
@@ -324,6 +324,15 @@ Generate a complete script with engaging narration, stock media recommendations,
     } catch (parseError) {
       console.error("Failed to parse JSON:", jsonContent.substring(0, 500));
       throw new Error("AI response was not valid JSON. Please try again.");
+    }
+
+    if (parsedResult.musicMixing) {
+      if (parsedResult.musicMixing.backgroundMusicVolume > 1) {
+        parsedResult.musicMixing.backgroundMusicVolume = parsedResult.musicMixing.backgroundMusicVolume / 100;
+      }
+      if (parsedResult.musicMixing.voiceoverVolume > 1) {
+        parsedResult.musicMixing.voiceoverVolume = parsedResult.musicMixing.voiceoverVolume / 100;
+      }
     }
 
     // Validate the response against the schema
