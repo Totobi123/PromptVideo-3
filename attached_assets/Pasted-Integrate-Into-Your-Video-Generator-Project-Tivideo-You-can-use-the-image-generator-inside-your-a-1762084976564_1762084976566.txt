@@ -1,0 +1,85 @@
+Integrate Into Your Video Generator Project (Tivideo)
+
+You can use the image generator inside your app to create AI stock images that match the generated script scenes or keywords.
+
+Example for Node.js / Backend integration (e.g. when you’re assembling the video):
+
+imageGenerator.js
+import fetch from "node-fetch";
+import fs from "fs";
+
+export async function generateImage(prompt, fileName = "image.jpg") {
+  const res = await fetch("https://tivideo.titobisatexam.workers.dev", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer 12345678",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`❌ Failed: ${res.status} ${errText}`);
+  }
+
+  const buffer = await res.arrayBuffer();
+  fs.writeFileSync(fileName, Buffer.from(buffer));
+  console.log(`✅ Image saved as ${fileName}`);
+}
+
+
+Then in your video pipeline (for example generateVideo.js):
+
+import { generateImage } from "./imageGenerator.js";
+import { joinImagesToVideo } from "./videoEditor.js"; // your function that merges images + audio
+
+async function main() {
+  console.log("🎨 Generating AI images...");
+  await generateImage("A cat on the table", "cat.jpg");
+  await generateImage("A dog playing in the garden", "dog.jpg");
+
+  console.log("🎬 Assembling into video...");
+  await joinImagesToVideo(["cat.jpg", "dog.jpg"], "output.mp4");
+}
+
+main();
+
+🧩 3️⃣ If you’re using a Frontend (React / HTML site)
+
+Example simple React component:
+
+import { useState } from "react";
+
+export default function ImageGenerator() {
+  const [prompt, setPrompt] = useState("");
+  const [image, setImage] = useState(null);
+
+  async function generate() {
+    const res = await fetch("https://tivideo.titobisatexam.workers.dev", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer 12345678",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ prompt })
+    });
+    const blob = await res.blob();
+    setImage(URL.createObjectURL(blob));
+  }
+
+  return (
+    <div className="p-4">
+      <input
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Enter image idea"
+        className="border p-2 rounded w-full"
+      />
+      <button onClick={generate} className="mt-2 bg-blue-600 text-white px-4 py-2 rounded">
+        Generate Image
+      </button>
+      {image && <img src={image} alt="Generated" className="mt-4 rounded shadow-lg" />}
+    </div>
+  );
+}
