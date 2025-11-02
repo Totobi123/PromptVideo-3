@@ -1,0 +1,77 @@
+🎯 2. Download all media (images + videos)
+
+You can automatically download them from your AI output using this Python script:
+
+import os
+import requests
+
+data = """
+[00:00 - 00:08] VIDEO: Black and white archival footage of Walt Disney smiling...
+URL: https://videos.pexels.com/video-files/7683083/7683083-hd_1280_720_24fps.mp4
+...
+"""
+
+os.makedirs("media", exist_ok=True)
+
+for line in data.splitlines():
+    if line.startswith("URL:"):
+        url = line.split("URL:")[1].strip()
+        filename = url.split("/")[-1]
+        filepath = os.path.join("media", filename)
+        if not os.path.exists(filepath):
+            print(f"Downloading {filename}...")
+            r = requests.get(url)
+            open(filepath, "wb").write(r.content)
+
+
+That saves every clip/image locally.
+
+🎞️ 3. Generate a FFmpeg input list
+
+Create input_list.txt:
+
+file 'media/7683083-hd_1280_720_24fps.mp4'
+duration 8
+file 'media/8183995.jpeg'
+duration 7
+file 'media/19550433-hd_1280_720_24fps.mp4'
+duration 8
+...
+
+
+Keep following your timestamps (difference between start and end).
+
+For images, FFmpeg will hold the still frame for the given duration.
+
+🧠 4. Combine into one timeline
+
+Run:
+
+ffmpeg -f concat -safe 0 -i input_list.txt -vf "scale=1280:720,format=yuv420p" -c:v libx264 -pix_fmt yuv420p output_novoice.mp4
+
+
+This makes the video track.
+
+🎙️ 5. Add voiceover and background music
+
+Now mix your voiceover.mp3 and bgmusic.mp3 (lower bg volume):
+
+ffmpeg -i voiceover.mp3 -i bgmusic.mp3 -filter_complex "[1:a]volume=0.25[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=2" mixed_audio.mp3
+
+
+Then merge that with your video:
+
+ffmpeg -i output_novoice.mp4 -i mixed_audio.mp3 -map 0:v -map 1:a -c:v copy -shortest final_video.mp4
+
+🪄 6. Optional: Smooth transitions + fades
+
+Add crossfade between clips:
+
+ffmpeg -f concat -safe 0 -i input_list.txt \
+-filter_complex "xfade=transition=fade:duration=1:offset=7" \
+output_with_fades.mp4
+
+
+Or fade in/out audio:
+
+ffmpeg -i mixed_audio.mp3 -af "afade=t=in:ss=0:d=2,afade=t=out:st=178:d=2" audio_faded.mp3
