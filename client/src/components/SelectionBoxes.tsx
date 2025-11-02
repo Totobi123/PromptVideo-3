@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church } from "lucide-react";
+import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church, Image, Wand2 } from "lucide-react";
 
 interface SelectionOption {
   value: string;
@@ -8,7 +8,7 @@ interface SelectionOption {
 }
 
 interface SelectionBoxesProps {
-  type: "mood" | "pace" | "length" | "audience" | "category";
+  type: "mood" | "pace" | "length" | "audience" | "category" | "mediaSource";
   selected: string;
   onSelect: (value: string) => void;
 }
@@ -57,12 +57,18 @@ const categoryOptions: SelectionOption[] = [
   { value: "gospel", label: "Gospel", icon: <Church className="w-5 h-5" /> },
 ];
 
+const mediaSourceOptions: SelectionOption[] = [
+  { value: "stock", label: "Stock Images/Videos", icon: <Image className="w-5 h-5" /> },
+  { value: "ai", label: "AI Generated Images", icon: <Wand2 className="w-5 h-5" /> },
+];
+
 export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps) {
   const options = 
     type === "mood" ? moodOptions :
     type === "pace" ? paceOptions :
     type === "length" ? lengthOptions :
     type === "audience" ? audienceOptions :
+    type === "mediaSource" ? mediaSourceOptions :
     categoryOptions;
   
   const title = 
@@ -70,6 +76,7 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
     type === "pace" ? "Select Pace" :
     type === "length" ? "Video Length" :
     type === "audience" ? "Target Audience" :
+    type === "mediaSource" ? "Media Source" :
     "Video Category";
 
   return (

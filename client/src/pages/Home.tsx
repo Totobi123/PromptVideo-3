@@ -34,6 +34,7 @@ export default function Home() {
   const [length, setLength] = useState("");
   const [audience, setAudience] = useState("");
   const [category, setCategory] = useState("");
+  const [mediaSource, setMediaSource] = useState("stock");
   const [progress, setProgress] = useState(0);
   const [scriptSegments, setScriptSegments] = useState<ScriptSegment[]>([]);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -144,6 +145,7 @@ export default function Home() {
             length: parseInt(length),
             audience,
             category,
+            mediaSource,
           }),
         });
 
@@ -200,6 +202,7 @@ export default function Home() {
     setLength("");
     setAudience("");
     setCategory("");
+    setMediaSource("stock");
     setProgress(0);
     setScriptSegments([]);
     setMediaItems([]);
@@ -515,6 +518,7 @@ export default function Home() {
               </div>
               <SelectionBoxes type="audience" selected={audience} onSelect={setAudience} />
               <SelectionBoxes type="category" selected={category} onSelect={setCategory} />
+              <SelectionBoxes type="mediaSource" selected={mediaSource} onSelect={setMediaSource} />
               <SelectionBoxes type="mood" selected={mood} onSelect={setMood} />
               <SelectionBoxes type="pace" selected={pace} onSelect={setPace} />
               <SelectionBoxes type="length" selected={length} onSelect={setLength} />
