@@ -27,8 +27,8 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
 
   const paceDescriptions = {
     normal: "moderate pace with clear pauses and natural rhythm",
-    fast: "fast-paced with short, punchy sentences. Use energetic language and quick transitions between ideas",
-    very_fast: "very fast-paced with extremely concise sentences. Use dynamic, high-energy language with rapid-fire delivery and minimal pauses",
+    fast: "fast-paced with short, punchy sentences",
+    very_fast: "very fast-paced with extremely concise sentences",
   };
 
   const audienceDescriptions = {
@@ -133,23 +133,8 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
     },
   };
 
-  let targetSegments = Math.max(3, Math.min(6, Math.round(lengthInSeconds / 25)));
-  let avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
-  
-  if (avgSegmentDuration > 40) {
-    targetSegments = Math.ceil(lengthInSeconds / 40);
-    avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
-  }
-
-  const wordsPerSecond = {
-    normal: 2.33,
-    fast: 2.83,
-    very_fast: 3.33,
-  };
-
-  const paceWordsPerSecond = wordsPerSecond[request.pace];
-  const wordsPerSegment = Math.ceil(avgSegmentDuration * paceWordsPerSecond);
-  const totalWords = Math.ceil(lengthInSeconds * paceWordsPerSecond);
+  const targetSegments = Math.max(3, Math.min(8, Math.round(lengthInSeconds / 20)));
+  const avgSegmentDuration = Math.round(lengthInSeconds / targetSegments);
 
   const categoryGuide = categoryGuidelines[request.category as keyof typeof categoryGuidelines];
   if (!categoryGuide) {
@@ -159,10 +144,8 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   const systemPrompt = `You are a professional YouTube video script writer and SEO expert. Generate a complete video production package.
 
 REQUIREMENTS:
-- Video length: EXACTLY ${lengthInSeconds} seconds (must be precise)
-- Target: ${targetSegments} segments of approximately ${avgSegmentDuration} seconds each
-- WORD COUNT: Each segment needs at least ${wordsPerSegment} words (total script: minimum ${totalWords} words)
-- Speaking pace: ${paceWordsPerSecond} words per second
+- Video length: approximately ${lengthInSeconds} seconds
+- Create ${targetSegments} segments of roughly ${avgSegmentDuration} seconds each
 - Mood: ${moodDescriptions[request.mood]}
 - Pace: ${paceDescriptions[request.pace]}
 - Target Audience: ${audienceDescriptions[request.audience]}
@@ -174,7 +157,7 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
     {
       "startTime": "00:00",
       "endTime": "00:15",
-      "text": "Opening narration...",
+      "text": "Engaging narration that fills the time naturally...",
       "emotionMarkers": [
         {"word": "amazing", "emotion": "emphasize"},
         {"word": "pause here", "emotion": "pause"}
@@ -189,28 +172,19 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
       "description": "Specific, detailed description for stock search",
       "isThumbnailCandidate": true,
       "transition": "fade"
-    },
-    {
-      "type": "image",
-      "startTime": "00:05",
-      "endTime": "00:10",
-      "description": "Another detailed description",
-      "isThumbnailCandidate": false,
-      "transition": "cut"
     }
   ],
   "seoPackage": {
     "title": "Compelling 60-char YouTube title",
     "description": "SEO-optimized description with keywords",
-    "hashtags": ["#relevant", "#hashtags", "#5-8total"]
+    "hashtags": ["#relevant", "#hashtags"]
   },
   "chapters": [
     {"timestamp": "00:00", "title": "Introduction"},
     {"timestamp": "00:15", "title": "Main Content"}
   ],
   "ctaPlacements": [
-    {"timestamp": "00:10", "type": "subscribe", "message": "If you're enjoying this, subscribe!"},
-    {"timestamp": "00:50", "type": "like", "message": "Hit that like button!"}
+    {"timestamp": "00:10", "type": "subscribe", "message": "If you're enjoying this, subscribe!"}
   ],
   "musicMixing": {
     "backgroundMusicVolume": 20,
@@ -220,92 +194,43 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   }
 }
 
-CRITICAL TIMING RULES:
-1. SCRIPT SEGMENTS: Create approximately ${targetSegments} segments totaling EXACTLY ${lengthInSeconds} seconds
-   - Target ${avgSegmentDuration} seconds per segment (can vary ±5 seconds for narrative flow)
-   - Calculate times precisely so all segments sum to exactly ${lengthInSeconds} seconds
-   - Adjust individual segment lengths as needed, but total must equal ${lengthInSeconds}s
+GUIDELINES:
+1. SCRIPT SEGMENTS: Create engaging, natural narration that flows well
+   - Make segments approximately ${avgSegmentDuration} seconds each
+   - Write full, detailed, engaging content (not brief summaries)
+   - Total duration should be close to ${lengthInSeconds} seconds
+   
+2. CATEGORY STRUCTURE: Follow the ${request.category} category structure
+   - Structure: ${categoryGuide.structure}
+   - Tone: ${categoryGuide.tone}
+   - Keywords: ${categoryGuide.keywords}
 
-2. TEXT LENGTH - CRITICAL - NON-NEGOTIABLE: Each segment's text MUST be long enough to fill its time duration when spoken aloud
-   - STRICT FORMULA: Segment duration (seconds) × ${paceWordsPerSecond} = MINIMUM words required
-   - Each ${avgSegmentDuration}s segment MUST have AT LEAST ${wordsPerSegment} words (THIS IS MANDATORY)
-   - Total script MUST contain AT LEAST ${totalWords} words to fill ${lengthInSeconds} seconds
-   - DO NOT write brief summaries - write FULL, DETAILED, ENGAGING narration with examples and elaboration
-   - The voiceover duration MUST match the segment timestamps EXACTLY
+3. VISUALS: Generate 4-8 media items per segment
+   - Mix of videos (60-70%) and images (30-40%)
+   - Media Preference: ${categoryGuide.mediaPreference}
+   - Each media item: 3-8 seconds duration
+   - Cover the full segment duration
+   - Detailed descriptions for better stock search results
+   - Mark 1-2 items as thumbnail candidates
    
-   EXAMPLES OF CORRECT WORD COUNTS:
-   - 20-second segment: MINIMUM 47 words (20 × ${paceWordsPerSecond})
-   - 24-second segment: MINIMUM 56 words (24 × ${paceWordsPerSecond})
-   - 30-second segment: MINIMUM 70 words (30 × ${paceWordsPerSecond})
-   
-   WARNING: Generating segments with fewer words will cause timing mismatches. A 2-minute video needs ${totalWords}+ words.
-   Count your words in each segment BEFORE returning the JSON to ensure compliance.
-   
-3. AUDIENCE: Tailor language and examples for ${request.audience}
-
-4. CATEGORY-SPECIFIC REQUIREMENTS - CRITICAL: The ${request.category} category MUST shape your entire output:
-   STRUCTURE: Follow this flow → ${categoryGuide.structure}
-   TONE: Maintain ${categoryGuide.tone}
-   MEDIA DESCRIPTIONS: Focus on ${categoryGuide.mediaPreference}
-   CTA STYLE: Use CTAs like: ${categoryGuide.ctaFocus}
-   KEYWORDS: Include these types of words: ${categoryGuide.keywords}
-   
-   Example: For ${request.category} videos:
-   - Script should follow the ${request.category} structure above
-   - Media items should prioritize ${categoryGuide.mediaPreference}
-   - CTAs should align with ${categoryGuide.ctaFocus}
-   - Language should match ${categoryGuide.tone}
-
-5. PACE:
-   - fast: Short sentences (5-8 words), energetic language
-   - very_fast: Very short sentences (3-6 words), punchy, dynamic
-   
-6. EMOTION MARKERS: Add 2-4 per segment marking key words to emphasize/pause
-
-7. VISUALS - CRITICAL: Generate media items to completely cover each segment
-   - MUST use a MIX of BOTH videos AND images across all segments - DO NOT use only images or only videos
-   - Overall ratio: 60-70% should be type "video", 30-40% should be type "image"
-   - IMPORTANT: Ensure each segment has BOTH video and image types where possible
-   - Per ${avgSegmentDuration}s segment: generate 6-10 media items (increased for better coverage)
-   - Each media item: 2-8 seconds duration (flexible to fit segment perfectly)
-   - Media items MUST cover entire segment duration with NO gaps
-   - Sequential timestamps covering full segment (e.g., 0:00-0:04, 0:04-0:08, 0:08-0:14, 0:14-0:20)
-   - Highly detailed, specific descriptions for better stock media search results
-   - Mark 1-2 visually striking items per segment as thumbnail candidates
-   - Transitions: "cut" for energy, "fade" for smooth, "zoom" for impact
-   - Example for 20s segment: [video 0:00-0:05, image 0:05-0:08, video 0:08-0:13, image 0:13-0:16, video 0:16-0:20]
-   
-8. SEO PACKAGE:
-   - Title: 60 chars, keyword-rich, click-worthy
+4. SEO PACKAGE:
+   - Title: 60 chars max, keyword-rich, compelling
    - Description: 150-200 chars, includes main keywords
-   - Hashtags: 5-8 relevant, trending-aware
+   - Hashtags: 5-8 relevant tags
    
-9. CHAPTERS: Create 3-5 YouTube chapters with timestamps
+5. CHAPTERS: Create 3-5 YouTube chapters with timestamps
 
-10. CTA PLACEMENTS: Add 2-4 calls-to-action at strategic moments
-    - Types: subscribe, like, comment, link, product
-    - Natural timing (not in first 5 seconds)
+6. CTAs: Add 2-4 calls-to-action
+   - CTA Style: ${categoryGuide.ctaFocus}
+   - Types: subscribe, like, comment, link, product
    
-11. MUSIC MIXING:
-    - backgroundMusicVolume: 15-30 (percentage)
-    - voiceoverVolume: 100
-    - fadeInDuration: 2-4 seconds
-    - fadeOutDuration: 2-5 seconds
-    
-12. Return ONLY the JSON object, no markdown
+7. MUSIC MIXING:
+   - backgroundMusicVolume: 15-30
+   - voiceoverVolume: 100
+   - fadeInDuration: 2-4 seconds
+   - fadeOutDuration: 2-5 seconds
 
-FINAL VERIFICATION CHECKLIST - VERIFY BEFORE SUBMITTING:
-✓ Total of all segment durations = ${lengthInSeconds} seconds (exact)
-✓ Created approximately ${targetSegments} segments averaging ${avgSegmentDuration}s each
-✓ WORD COUNT CHECK: Count the words in EACH segment - must be AT LEAST ${wordsPerSegment} words per segment
-✓ TOTAL WORD COUNT: Entire script contains AT LEAST ${totalWords} words (count to verify)
-✓ Calculate: Each segment duration × ${paceWordsPerSecond} words/second = minimum words for that segment
-✓ Voiceover text is long enough to fill segment time when spoken at ${paceWordsPerSecond} words/second
-✓ Every segment has 6-10 media items with no time gaps
-✓ Overall media mix is 60-70% videos, 30-40% images
-✓ Each segment contains BOTH video and image types (mixed together)
-
-CRITICAL: If any segment has fewer than the required words, ADD MORE DETAIL AND ELABORATION to that segment's narration.`;
+8. Return ONLY the JSON object, no markdown wrappers`;
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {
@@ -327,10 +252,10 @@ CRITICAL: If any segment has fewer than the required words, ADD MORE DETAIL AND 
             role: "user",
             content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}
 
-CRITICAL REMINDER: This ${lengthInSeconds}-second video MUST contain AT LEAST ${totalWords} words total. Each segment must have enough words to fill its duration at ${paceWordsPerSecond} words/second. DO NOT submit short segments - write detailed, elaborate narration.`,
+Generate a complete script with engaging narration, stock media recommendations, SEO package, chapters, CTAs, and music mixing recommendations.`,
           },
         ],
-        temperature: 0.5,
+        temperature: 0.7,
         max_tokens: 8000,
         response_format: { type: "json_object" },
       }),
@@ -350,7 +275,6 @@ CRITICAL REMINDER: This ${lengthInSeconds}-second video MUST contain AT LEAST ${
 
     // Parse the JSON response, handling potential markdown wrapper
     let jsonContent = content.trim();
-    console.log("Raw AI response:", content.substring(0, 500));
     
     if (jsonContent.startsWith("```json")) {
       jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
@@ -370,48 +294,24 @@ CRITICAL REMINDER: This ${lengthInSeconds}-second video MUST contain AT LEAST ${
     const validationResult = aiScriptResponseSchema.safeParse(parsedResult);
     if (!validationResult.success) {
       console.error("Schema validation failed:", validationResult.error);
+      
+      // Try to use what we got if segments exist
+      if (parsedResult.segments && parsedResult.segments.length > 0) {
+        console.log("Using partial result despite validation errors");
+        return {
+          segments: parsedResult.segments || [],
+          mediaItems: parsedResult.mediaItems || [],
+          seoPackage: parsedResult.seoPackage || null,
+          chapters: parsedResult.chapters || [],
+          ctaPlacements: parsedResult.ctaPlacements || [],
+          musicMixing: parsedResult.musicMixing || null,
+        };
+      }
+      
       throw new Error("AI response did not match expected format. Please try again.");
     }
 
-    // Validate word counts per segment
-    const segments = validationResult.data.segments;
-    let totalWordCount = 0;
-    const segmentIssues: string[] = [];
-
-    for (let i = 0; i < segments.length; i++) {
-      const segment = segments[i];
-      const wordCount = segment.text.trim().split(/\s+/).length;
-      totalWordCount += wordCount;
-
-      // Calculate expected duration and minimum words for this segment
-      const startParts = segment.startTime.split(':').map(Number);
-      const endParts = segment.endTime.split(':').map(Number);
-      const startSeconds = startParts[0] * 60 + startParts[1];
-      const endSeconds = endParts[0] * 60 + endParts[1];
-      const segmentDuration = endSeconds - startSeconds;
-      const minimumWords = Math.ceil(segmentDuration * paceWordsPerSecond);
-
-      if (wordCount < minimumWords) {
-        segmentIssues.push(
-          `Segment ${i + 1} (${segment.startTime}-${segment.endTime}, ${segmentDuration}s): has ${wordCount} words, needs ${minimumWords}+ words`
-        );
-      }
-    }
-
-    console.log(`Total word count: ${totalWordCount} words (required: ${totalWords}+)`);
-    
-    if (segmentIssues.length > 0) {
-      console.error("Word count validation failed:", segmentIssues);
-      throw new Error(
-        `Generated script has insufficient word counts. ${segmentIssues.join('; ')}. Please try again.`
-      );
-    }
-
-    if (totalWordCount < totalWords * 0.9) {
-      throw new Error(
-        `Total word count (${totalWordCount}) is significantly below required ${totalWords}. Please try again.`
-      );
-    }
+    console.log(`Generated script with ${validationResult.data.segments.length} segments and ${validationResult.data.mediaItems.length} media items`);
 
     return {
       segments: validationResult.data.segments,
