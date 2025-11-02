@@ -35,7 +35,7 @@ export const scriptSegmentSchema = z.object({
   text: z.string(),
   emotionMarkers: z.array(z.object({
     word: z.string(),
-    emotion: z.enum(["emphasize", "pause", "excited", "calm", "urgent"]),
+    emotion: z.enum(["emphasize", "pause", "excited", "calm", "urgent", "enthusiasm"]),
   })).optional(),
 });
 
