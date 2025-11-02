@@ -1,88 +1,65 @@
+const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY;
+const PIXABAY_AUDIO_API_URL = "https://pixabay.com/api/audio/";
+
 type Mood = "happy" | "casual" | "sad" | "promotional" | "enthusiastic";
 
-// Curated royalty-free music from Kevin MacLeod (incompetech.com)
-// All tracks are CC BY 4.0 licensed and free to use
-const moodToMusicLibrary: Record<Mood, Array<{ url: string; title: string; artist: string }>> = {
-  happy: [
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Wallpaper.mp3",
-      title: "Wallpaper",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Carefree.mp3",
-      title: "Carefree",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-  ],
-  casual: [
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Straight.mp3",
-      title: "Straight",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Comfortable%20Mystery%201%20-%20Film%20Noire.mp3",
-      title: "Comfortable Mystery",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-  ],
-  sad: [
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Invariance.mp3",
-      title: "Invariance",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2001.mp3",
-      title: "Meditation Impromptu",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-  ],
-  promotional: [
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Rising.mp3",
-      title: "Rising",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Deliberate%20Thought.mp3",
-      title: "Deliberate Thought",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-  ],
-  enthusiastic: [
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Pumped.mp3",
-      title: "Pumped",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-    {
-      url: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Gotta%20Get%20Up.mp3",
-      title: "Gotta Get Up",
-      artist: "Kevin MacLeod (incompetech.com)",
-    },
-  ],
+const moodToKeywordMap: Record<Mood, string> = {
+  happy: "uplifting",
+  casual: "relaxing",
+  sad: "emotional",
+  promotional: "cinematic",
+  enthusiastic: "energetic",
 };
 
+interface PixabayAudioHit {
+  id: number;
+  name: string;
+  tags: string;
+  duration: number;
+  audio: string;
+  previewURL: string;
+}
+
+interface PixabayAudioResponse {
+  total: number;
+  totalHits: number;
+  hits: PixabayAudioHit[];
+}
+
 export async function searchBackgroundMusic(mood: Mood): Promise<{ url: string; title: string } | null> {
+  if (!PIXABAY_API_KEY) {
+    console.error("PIXABAY_API_KEY is not configured");
+    return null;
+  }
+
   try {
-    const musicOptions = moodToMusicLibrary[mood];
+    const keyword = moodToKeywordMap[mood];
+    const url = `${PIXABAY_AUDIO_API_URL}?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(keyword)}&per_page=5`;
+
+    const response = await fetch(url);
     
-    if (!musicOptions || musicOptions.length === 0) {
-      console.warn("No music tracks available for mood:", mood);
+    if (!response.ok) {
+      console.error(`Pixabay API error: ${response.status} - ${response.statusText}`);
       return null;
     }
 
-    // Select a random track from the mood's music options
-    const selectedTrack = musicOptions[Math.floor(Math.random() * musicOptions.length)];
+    const data: PixabayAudioResponse = await response.json();
 
-    return {
-      url: selectedTrack.url,
-      title: `${selectedTrack.title} - ${selectedTrack.artist}`,
-    };
+    if (data.hits && data.hits.length > 0) {
+      // Select a random track from the results
+      const randomIndex = Math.floor(Math.random() * data.hits.length);
+      const selectedTrack = data.hits[randomIndex];
+
+      return {
+        url: selectedTrack.audio,
+        title: selectedTrack.name,
+      };
+    } else {
+      console.warn("No music found for mood:", mood);
+      return null;
+    }
   } catch (error) {
-    console.error("Error fetching background music:", error);
+    console.error("Error fetching background music from Pixabay:", error);
     return null;
   }
 }
