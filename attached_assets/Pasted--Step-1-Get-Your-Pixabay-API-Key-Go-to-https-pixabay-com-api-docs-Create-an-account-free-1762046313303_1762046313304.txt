@@ -1,0 +1,141 @@
+🎵 Step 1: Get Your Pixabay API Key
+
+Go to 👉 https://pixabay.com/api/docs/
+
+Create an account (free) and get your API key (looks like 12345678-abcdef1234567890abcdef).
+
+📘 Step 2: Install Needed Packages in Replit
+
+In Replit shell, run:
+
+npm install express axios express-fileupload fluent-ffmpeg
+
+⚙️ Step 3: Create pixabayMusic.js (Pixabay integration)
+
+This small module fetches royalty-free background music from Pixabay automatically.
+
+// pixabayMusic.js
+import axios from "axios";
+
+const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY; // Store safely in Replit Secrets
+
+/**
+ * Fetch background music from Pixabay by keyword
+ * @param {string} query - search term (e.g. "cinematic", "uplifting", "relaxing")
+ * @returns {Promise<string>} URL of the best matching music file (MP3)
+ */
+export async function getPixabayMusic(query = "cinematic") {
+  try {
+    const url = `https://pixabay.com/api/audio/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(
+      query
+    )}&per_page=5`;
+
+    const response = await axios.get(url);
+    if (response.data.hits && response.data.hits.length > 0) {
+      // Pick a random or first track
+      return response.data.hits[0].audio;
+    } else {
+      throw new Error("No music found for that query.");
+    }
+  } catch (error) {
+    console.error("Pixabay music fetch error:", error.message);
+    throw error;
+  }
+}
+
+⚡ Step 4: Use It in Your Main Server (e.g. index.js or server.js)
+
+Below is the Express backend example that uses the Pixabay function to automatically fetch background music before video editing.
+
+import express from "express";
+import fileUpload from "express-fileupload";
+import ffmpeg from "fluent-ffmpeg";
+import fs from "fs";
+import axios from "axios";
+import { getPixabayMusic } from "./pixabayMusic.js";
+
+const app = express();
+app.use(fileUpload());
+
+// Route to auto-get music and create video
+app.post("/auto-edit", async (req, res) => {
+  const { images } = req.files;
+  const keyword = req.body.keyword || "inspirational";
+
+  try {
+    // 🎵 Get background music from Pixabay
+    const musicURL = await getPixabayMusic(keyword);
+    const musicPath = "./uploads/bgMusic.mp3";
+    const musicData = await axios.get(musicURL, { responseType: "arraybuffer" });
+    fs.writeFileSync(musicPath, Buffer.from(musicData.data));
+
+    // 💾 Save uploaded images
+    const tempDir = "./uploads";
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+    const imagePaths = [];
+    if (Array.isArray(images)) {
+      images.forEach((img, i) => {
+        const path = `${tempDir}/img${i}.jpg`;
+        img.mv(path);
+        imagePaths.push(path);
+      });
+    }
+
+    // 🧩 Combine with FFmpeg
+    const outputPath = "./output/final.mp4";
+    const durationPerImage = 3;
+
+    const inputOptions = imagePaths.map(p => ["-loop", "1", "-t", durationPerImage, "-i", p]).flat();
+
+    ffmpeg()
+      .inputOptions(inputOptions)
+      .input(musicPath)
+      .outputOptions("-shortest")
+      .on("end", () => res.download(outputPath))
+      .on("error", err => {
+        console.error(err);
+        res.status(500).send("Error editing video");
+      })
+      .save(outputPath);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to fetch or use Pixabay music");
+  }
+});
+
+app.listen(3000, () => console.log("🎬 Server running on port 3000"));
+
+🔑 Step 5: Add Pixabay API Key in Replit
+
+In Replit left panel → 🔐 Secrets
+
+Add:
+
+Key: PIXABAY_API_KEY
+Value: your_pixabay_api_key_here
+
+✅ Test It
+
+Open Replit shell and run:
+
+npm start
+
+
+Then test with Postman or your frontend:
+
+POST /auto-edit
+Form data:
+ - images[] = upload your .jpgs
+ - keyword = "happy" or "epic" or "relax"
+
+
+It will:
+
+Fetch free background music from Pixabay 🎵
+
+Merge your uploaded images into a video 🎬
+
+Add the background music
+
+Send the final .mp4 back for download ✅
