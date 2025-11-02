@@ -15,7 +15,20 @@ Enhanced category-driven video generation and timing accuracy:
 - **Gospel Category Added**: New faith-based content category with appropriate structure, tone, and visual preferences
 
 ### November 2, 2025
-Replaced Pixabay with FreeSound for background music:
+**Video Rendering System Improvements**:
+- **Fixed Video vs Image Handling**: Video clips are now properly processed without looping (using `-t` for trimming), while images correctly use `-loop 1` to create video clips
+- **Concat Demuxer Implementation**: Switched from complex filter approach to FFmpeg's concat demuxer for more reliable video concatenation
+- **Improved Processing Pipeline**: 
+  1. Download all media files
+  2. Normalize each file to 1280x720 video-only format
+  3. Create concat input list with proper duration directives
+  4. Concatenate all media into single video track
+  5. Mix audio (voiceover + optional background music)
+  6. Combine video and audio into final MP4
+- **Better Error Handling**: Added comprehensive logging throughout the rendering process for easier debugging
+- **Audio Stream Management**: All normalized media outputs are video-only to prevent stream mismatches during concatenation
+
+**Background Music Integration**:
 - **FreeSound Integration**: Switched from Pixabay to FreeSound API for better quality and variety of background music
 - **Attribution Support**: System now displays music creator and license information to comply with Creative Commons requirements
 - **Enhanced Music Search**: Improved mood-to-keyword mapping for more accurate music selection based on video mood
