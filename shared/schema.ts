@@ -25,6 +25,7 @@ export const generateScriptRequestSchema = z.object({
   length: z.number().positive(),
   audience: z.enum(["kids", "teens", "adults", "professionals", "general"]),
   category: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment", "gospel"]),
+  mediaSource: z.enum(["stock", "ai"]).default("stock"),
 });
 
 export type GenerateScriptRequest = z.infer<typeof generateScriptRequestSchema>;
