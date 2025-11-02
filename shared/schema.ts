@@ -19,7 +19,7 @@ export type User = typeof users.$inferSelect;
 
 // Video generation schemas
 export const generateScriptRequestSchema = z.object({
-  prompt: z.string().min(10),
+  prompt: z.string().min(10, "Prompt must be at least 10 characters"),
   mood: z.enum(["happy", "casual", "sad", "promotional", "enthusiastic"]),
   pace: z.enum(["normal", "fast", "very_fast"]),
   length: z.number().positive(),
