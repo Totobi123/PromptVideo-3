@@ -156,3 +156,29 @@ export const suggestDetailsResponseSchema = z.object({
 });
 
 export type SuggestDetailsResponse = z.infer<typeof suggestDetailsResponseSchema>;
+
+// Video rendering schemas
+export const renderVideoRequestSchema = z.object({
+  segments: z.array(scriptSegmentSchema),
+  mediaItems: z.array(mediaItemSchema),
+  audioUrl: z.string().url(),
+  musicUrl: z.string().url().optional(),
+  musicMixing: z.object({
+    backgroundMusicVolume: z.number().min(0).max(1).default(0.3),
+    voiceoverVolume: z.number().min(0).max(1).default(1.0),
+    fadeInDuration: z.number().min(0).default(1),
+    fadeOutDuration: z.number().min(0).default(1),
+  }).optional(),
+});
+
+export type RenderVideoRequest = z.infer<typeof renderVideoRequestSchema>;
+
+export const renderVideoResponseSchema = z.object({
+  jobId: z.string(),
+  status: z.enum(["queued", "processing", "completed", "failed"]),
+  progress: z.number().min(0).max(100),
+  videoUrl: z.string().optional(),
+  error: z.string().optional(),
+});
+
+export type RenderVideoResponse = z.infer<typeof renderVideoResponseSchema>;

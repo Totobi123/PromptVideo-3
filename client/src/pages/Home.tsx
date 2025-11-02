@@ -12,7 +12,8 @@ import { SEOPackage } from "@/components/SEOPackage";
 import { ProductionInfo } from "@/components/ProductionInfo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Sparkles, RefreshCw, AlertCircle, Video, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Step = "prompt" | "details" | "generating" | "results";
@@ -65,6 +66,10 @@ export default function Home() {
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [renderJobId, setRenderJobId] = useState<string>("");
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
@@ -332,6 +337,107 @@ export default function Home() {
     }
   };
 
+  const handleMakeVideo = async () => {
+    if (!audioUrl) {
+      toast({
+        title: "Missing Voiceover",
+        description: "Please generate voiceover audio first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (mediaItems.length === 0 || !mediaItems[0].url) {
+      toast({
+        title: "Missing Media",
+        description: "Please ensure media items have been loaded.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRendering(true);
+    setRenderProgress(0);
+    setVideoUrl("");
+
+    try {
+      const response = await fetch("/api/render-video", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          segments: scriptSegments,
+          mediaItems: mediaItems,
+          audioUrl: audioUrl,
+          musicUrl: musicUrl || undefined,
+          musicMixing: musicMixing || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start video rendering");
+      }
+
+      const job = await response.json();
+      setRenderJobId(job.jobId);
+
+      const checkInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/render-video/${job.jobId}`);
+          if (!statusResponse.ok) {
+            clearInterval(checkInterval);
+            throw new Error("Failed to check render status");
+          }
+
+          const status = await statusResponse.json();
+          setRenderProgress(status.progress);
+
+          if (status.status === "completed") {
+            clearInterval(checkInterval);
+            setVideoUrl(status.videoUrl);
+            setIsRendering(false);
+            toast({
+              title: "Video Ready!",
+              description: "Your video has been rendered successfully.",
+            });
+          } else if (status.status === "failed") {
+            clearInterval(checkInterval);
+            setIsRendering(false);
+            throw new Error(status.error || "Video rendering failed");
+          }
+        } catch (error) {
+          clearInterval(checkInterval);
+          setIsRendering(false);
+          console.error("Error checking render status:", error);
+        }
+      }, 2000);
+
+    } catch (error) {
+      setIsRendering(false);
+      console.error("Error rendering video:", error);
+      toast({
+        title: "Rendering Failed",
+        description: error instanceof Error ? error.message : "Failed to render video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadVideo = () => {
+    if (videoUrl) {
+      const a = document.createElement("a");
+      a.href = videoUrl;
+      a.download = "video.mp4";
+      a.click();
+      
+      toast({
+        title: "Video Downloaded",
+        description: "Your video has been downloaded.",
+      });
+    }
+  };
+
   const getCurrentStepNumber = () => {
     const stepMap: Record<Step, number> = {
       prompt: 1,
@@ -509,6 +615,64 @@ export default function Home() {
                   onExportAudio={handleExportAudio}
                   onExportMedia={handleExportMedia}
                 />
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Render Final Video
+                  </h3>
+                  {videoUrl && (
+                    <Button
+                      data-testid="button-download-video"
+                      onClick={handleDownloadVideo}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Video
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Combine your script, voiceover, music, and media into a final MP4 video.
+                </p>
+                
+                {isRendering && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Rendering video...</span>
+                      <span className="font-medium">{renderProgress}%</span>
+                    </div>
+                    <Progress value={renderProgress} data-testid="progress-video-render" />
+                  </div>
+                )}
+
+                {videoUrl && (
+                  <div className="rounded-lg border overflow-hidden">
+                    <video
+                      data-testid="video-preview"
+                      controls
+                      className="w-full"
+                      src={videoUrl}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+
+                <Button
+                  data-testid="button-make-video"
+                  onClick={handleMakeVideo}
+                  disabled={isRendering || !audioUrl}
+                  size="lg"
+                  className="w-full gap-2"
+                >
+                  <Video className="w-5 h-5" />
+                  {isRendering ? "Rendering..." : videoUrl ? "Render Again" : "Make Video Now"}
+                </Button>
               </div>
             </Card>
           </div>

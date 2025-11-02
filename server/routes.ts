@@ -5,12 +5,14 @@ import {
   generateScriptRequestSchema, 
   generateAudioRequestSchema,
   improvePromptRequestSchema,
-  suggestDetailsRequestSchema 
+  suggestDetailsRequestSchema,
+  renderVideoRequestSchema
 } from "@shared/schema";
 import { generateVideoScript, improvePrompt, suggestDetails } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
 import { searchBackgroundMusic } from "./services/freesound";
+import { renderVideo } from "./services/videoRenderer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Generate video script with AI
@@ -114,6 +116,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error suggesting details:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to suggest details" 
+      });
+    }
+  });
+
+  // Render video from script, media, and audio
+  app.post("/api/render-video", async (req, res) => {
+    try {
+      const validatedData = renderVideoRequestSchema.parse(req.body);
+      
+      const job = await storage.createRenderJob(validatedData);
+      
+      renderVideo(job.jobId, validatedData).catch(err => {
+        console.error("Background render error:", err);
+      });
+      
+      res.json(job);
+    } catch (error) {
+      console.error("Error starting render:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to start render" 
+      });
+    }
+  });
+
+  // Get render job status
+  app.get("/api/render-video/:jobId", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      const job = await storage.getRenderJob(jobId);
+      
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      
+      res.json(job);
+    } catch (error) {
+      console.error("Error getting render status:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to get render status" 
       });
     }
   });
