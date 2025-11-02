@@ -21,6 +21,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = generateScriptRequestSchema.parse(req.body);
       
+      console.log("=== GENERATE SCRIPT REQUEST ===");
+      console.log("Media Source Selected:", validatedData.mediaSource);
+      console.log("===============================");
+      
       // Generate script using DeepSeek via OpenRouter
       const result = await generateVideoScript(validatedData);
       
@@ -34,11 +38,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [musicInfo, mediaItemsWithUrls, audioUrl] = await Promise.all([
         searchBackgroundMusic(validatedData.mood),
         Promise.all(
-          result.mediaItems.map(async (item) => {
+          result.mediaItems.map(async (item, index) => {
             let media;
             if (validatedData.mediaSource === "ai") {
+              console.log(`Generating AI image ${index + 1}/${result.mediaItems.length}: "${item.description}"`);
               media = await generateAIImage(item.description);
+              console.log(`AI image ${index + 1} generated:`, media.url ? "SUCCESS" : "FAILED");
             } else {
+              console.log(`Fetching stock media ${index + 1}/${result.mediaItems.length}: "${item.description}"`);
               media = await searchPexelsMedia(item.description, item.type);
             }
             return {
