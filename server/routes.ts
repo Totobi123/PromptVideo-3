@@ -35,7 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           })
         ),
-        generateVoiceover(fullScriptText, voiceInfo.voiceId, validatedData.pace),
+        generateVoiceover(fullScriptText, voiceInfo.voiceId, validatedData.pace, voiceInfo.style),
       ]);
 
       res.json({

@@ -3,15 +3,15 @@ const MURF_API_URL = "https://api.murf.ai/v1/speech/generate";
 
 type Mood = "happy" | "casual" | "sad" | "promotional" | "enthusiastic";
 
-export const voiceMoodMapping: Record<Mood, { voiceId: string; voiceName: string }> = {
-  happy: { voiceId: "en-US-terrell", voiceName: "Terrell (Upbeat American)" },
-  casual: { voiceId: "en-US-natalie", voiceName: "Natalie (Casual American)" },
-  sad: { voiceId: "en-US-clint", voiceName: "Clint (Somber American)" },
-  promotional: { voiceId: "en-US-wayne", voiceName: "Wayne (Professional American)" },
-  enthusiastic: { voiceId: "en-US-ken", voiceName: "Ken (Energetic American)" },
+export const voiceMoodMapping: Record<Mood, { voiceId: string; voiceName: string; style: string }> = {
+  happy: { voiceId: "en-US-natalie", voiceName: "Natalie (Conversational)", style: "Conversational" },
+  casual: { voiceId: "en-US-amara", voiceName: "Amara (Conversational)", style: "Conversational" },
+  sad: { voiceId: "en-US-ken", voiceName: "Ken (Sad)", style: "Sad" },
+  promotional: { voiceId: "en-US-miles", voiceName: "Miles (Promo)", style: "Promo" },
+  enthusiastic: { voiceId: "en-US-natalie", voiceName: "Natalie (Inspirational)", style: "Inspirational" },
 };
 
-export function getVoiceForMood(mood: Mood): { voiceId: string; voiceName: string } {
+export function getVoiceForMood(mood: Mood): { voiceId: string; voiceName: string; style: string } {
   return voiceMoodMapping[mood];
 }
 
@@ -28,14 +28,25 @@ function getSpeedForPace(pace: Pace): number {
 
 export async function generateVoiceover(
   text: string, 
-  voiceId: string = "en-US-terrell",
-  pace: Pace = "normal"
+  voiceId: string = "en-US-natalie",
+  pace: Pace = "normal",
+  style?: string
 ): Promise<string> {
   if (!MURF_API_KEY) {
     throw new Error("MURF_API_KEY is not configured");
   }
 
   const speed = getSpeedForPace(pace);
+
+  const requestBody: Record<string, any> = {
+    text,
+    voiceId,
+    speed,
+  };
+
+  if (style) {
+    requestBody.style = style;
+  }
 
   try {
     const response = await fetch(MURF_API_URL, {
@@ -45,11 +56,7 @@ export async function generateVoiceover(
         "Accept": "application/json",
         "api-key": MURF_API_KEY,
       },
-      body: JSON.stringify({
-        text,
-        voiceId,
-        speed,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
