@@ -179,16 +179,6 @@ export default function Home() {
     });
   };
 
-  const handlePlayVoiceover = () => {
-    if (audioUrl) {
-      window.open(audioUrl, "_blank");
-      toast({
-        title: "Voiceover Preview",
-        description: "Voiceover audio opened in a new tab.",
-      });
-    }
-  };
-
   const handleDownloadVoiceover = () => {
     if (audioUrl) {
       const a = document.createElement("a");
@@ -205,8 +195,11 @@ export default function Home() {
 
   const handleExportAudio = async () => {
     if (audioUrl) {
-      // Audio already generated, just open it
-      handlePlayVoiceover();
+      window.open(audioUrl, "_blank");
+      toast({
+        title: "Voiceover Opened",
+        description: "Your voiceover has been opened in a new tab.",
+      });
       return;
     }
 
@@ -274,16 +267,6 @@ export default function Home() {
       title: "Media List Exported",
       description: "Your stock media list has been downloaded.",
     });
-  };
-
-  const handlePlayMusic = () => {
-    if (musicUrl) {
-      window.open(musicUrl, "_blank");
-      toast({
-        title: "Music Preview",
-        description: "Background music opened in a new tab.",
-      });
-    }
   };
 
   const handleDownloadMusic = () => {
@@ -441,9 +424,7 @@ export default function Home() {
               musicUrl={musicUrl}
               musicCreator={musicCreator}
               musicLicense={musicLicense}
-              onPlayVoiceover={handlePlayVoiceover}
               onDownloadVoiceover={handleDownloadVoiceover}
-              onPlayMusic={handlePlayMusic}
               onDownloadMusic={handleDownloadMusic}
             />
 

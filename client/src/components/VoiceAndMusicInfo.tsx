@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Mic, Music, Download, Play } from "lucide-react";
+import { Mic, Music } from "lucide-react";
+import { AudioPlayer } from "./AudioPlayer";
 
 interface VoiceAndMusicInfoProps {
   voiceName: string;
@@ -9,9 +9,7 @@ interface VoiceAndMusicInfoProps {
   musicUrl?: string;
   musicCreator?: string;
   musicLicense?: string;
-  onPlayVoiceover?: () => void;
   onDownloadVoiceover?: () => void;
-  onPlayMusic?: () => void;
   onDownloadMusic?: () => void;
 }
 
@@ -22,9 +20,7 @@ export function VoiceAndMusicInfo({
   musicUrl,
   musicCreator,
   musicLicense,
-  onPlayVoiceover,
   onDownloadVoiceover,
-  onPlayMusic,
   onDownloadMusic,
 }: VoiceAndMusicInfoProps) {
   return (
@@ -42,42 +38,25 @@ export function VoiceAndMusicInfo({
             <div className="rounded-full bg-primary/10 p-2">
               <Mic className="w-4 h-4 text-primary" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">Voiceover</p>
-              <p className="text-sm text-muted-foreground mb-2">{voiceName}</p>
+              <p className="text-sm text-muted-foreground mb-3">{voiceName}</p>
               {audioUrl && (
-                <div className="flex gap-2">
-                  <Button
-                    data-testid="button-play-voiceover"
-                    onClick={onPlayVoiceover}
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Play className="w-3 h-3" />
-                    Preview
-                  </Button>
-                  <Button
-                    data-testid="button-download-voiceover"
-                    onClick={onDownloadVoiceover}
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Download className="w-3 h-3" />
-                    Download
-                  </Button>
-                </div>
+                <AudioPlayer
+                  url={audioUrl}
+                  title={voiceName}
+                  onDownload={onDownloadVoiceover}
+                />
               )}
             </div>
           </div>
 
           {musicTitle && musicUrl && (
             <div className="flex items-start gap-3">
-              <div className="rounded-full bg-primary/10 p-2">
+              <div className="rounded-full bg-primary/10 p-2 flex-shrink-0">
                 <Music className="w-4 h-4 text-primary" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">Background Music</p>
                 <p className="text-sm text-muted-foreground">{musicTitle}</p>
                 {musicCreator && (
@@ -86,33 +65,16 @@ export function VoiceAndMusicInfo({
                   </p>
                 )}
                 {musicLicense && (
-                  <p className="text-xs text-muted-foreground mb-2" data-testid="text-music-license">
+                  <p className="text-xs text-muted-foreground mb-3" data-testid="text-music-license">
                     License: {musicLicense}
                   </p>
                 )}
-                {!musicCreator && !musicLicense && <div className="mb-2" />}
-                <div className="flex gap-2">
-                  <Button
-                    data-testid="button-play-music"
-                    onClick={onPlayMusic}
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Play className="w-3 h-3" />
-                    Preview
-                  </Button>
-                  <Button
-                    data-testid="button-download-music"
-                    onClick={onDownloadMusic}
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Download className="w-3 h-3" />
-                    Download
-                  </Button>
-                </div>
+                {!musicCreator && !musicLicense && <div className="mb-3" />}
+                <AudioPlayer
+                  url={musicUrl}
+                  title={musicTitle}
+                  onDownload={onDownloadMusic}
+                />
               </div>
             </div>
           )}
