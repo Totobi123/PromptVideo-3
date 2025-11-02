@@ -218,13 +218,20 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
   }
 }
 
+CRITICAL WORD COUNT REQUIREMENT - THIS IS MANDATORY:
+⚠️ YOU MUST GENERATE AT LEAST ${estimatedTotalWords} TOTAL WORDS ⚠️
+Each ${avgSegmentDuration}-second segment MUST contain AT LEAST ${wordsPerSegment} words.
+Do NOT generate brief summaries. Write FULL, DETAILED, ELABORATE narration with examples, explanations, and rich descriptions.
+
 GUIDELINES:
 1. SCRIPT SEGMENTS: Create engaging, natural narration that flows well
    - Make segments approximately ${avgSegmentDuration} seconds each
-   - Each segment should contain approximately ${wordsPerSegment} words (based on ${paceWPM} words/minute)
-   - Total script should contain approximately ${estimatedTotalWords} words to fill ${lengthInSeconds} seconds
-   - Write full, detailed, engaging content (not brief summaries)
-   - Remember: at ${request.pace} pace (${paceWPM} words/min), you need substantial content to fill the time
+   - Each segment MUST contain AT LEAST ${wordsPerSegment} words (based on ${paceWPM} words/minute)
+   - Total script MUST contain AT LEAST ${estimatedTotalWords} words to fill ${lengthInSeconds} seconds
+   - Write FULL, DETAILED, ENGAGING content with examples and elaboration
+   - Add specific details, stories, explanations, and descriptions to reach the word count
+   - DO NOT write short, brief segments - expand every idea with rich detail
+   - Remember: at ${request.pace} pace (${paceWPM} words/min), you need SUBSTANTIAL content to fill the time
    
 2. CATEGORY STRUCTURE: Follow the ${request.category} category structure
    - Structure: ${categoryGuide.structure}
@@ -268,7 +275,7 @@ GUIDELINES:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo",
+        model: "x-ai/grok-4-fast",
         messages: [
           {
             role: "system",
@@ -278,7 +285,12 @@ GUIDELINES:
             role: "user",
             content: `Create a ${lengthInSeconds}-second ${request.category} video for ${request.audience} about: ${request.prompt}
 
-REMINDER: At ${request.pace} pace (${paceWPM} words/minute), you need approximately ${estimatedTotalWords} total words to fill ${lengthInSeconds} seconds. Write ${wordsPerSegment} words per segment.
+⚠️ CRITICAL REQUIREMENT - DO NOT IGNORE ⚠️
+At ${request.pace} pace (${paceWPM} words/minute), you MUST generate AT LEAST ${estimatedTotalWords} total words to fill ${lengthInSeconds} seconds.
+Each segment needs AT LEAST ${wordsPerSegment} words.
+
+COUNT YOUR WORDS before submitting. If any segment has fewer than ${wordsPerSegment} words, ADD MORE DETAIL, EXAMPLES, and ELABORATION.
+DO NOT submit brief summaries. Write FULL, DETAILED, ENGAGING narration that actually fills the time.
 
 Generate a complete script with engaging narration, stock media recommendations, SEO package, chapters, CTAs, and music mixing recommendations.`,
           },
