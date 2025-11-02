@@ -1,7 +1,9 @@
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface PromptInputProps {
   value: string;
@@ -13,6 +15,8 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
   const [charCount, setCharCount] = useState(value.length);
   const [wordCount, setWordCount] = useState(0);
   const [showCharWarning, setShowCharWarning] = useState(false);
+  const [isImproving, setIsImproving] = useState(false);
+  const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -29,6 +33,49 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
     setWordCount(count);
     setShowCharWarning(value.trim().length > 0 && value.trim().length < 10);
   }, [value]);
+
+  const handleImprovePrompt = async () => {
+    if (value.trim().length < 10) {
+      toast({
+        title: "Prompt too short",
+        description: "Please add at least 10 characters before improving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImproving(true);
+    try {
+      const response = await fetch("/api/improve-prompt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: value }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to improve prompt");
+      }
+
+      const data = await response.json();
+      onChange(data.improvedPrompt);
+      
+      toast({
+        title: "Prompt improved!",
+        description: "Your prompt has been enhanced with AI suggestions.",
+      });
+    } catch (error) {
+      console.error("Error improving prompt:", error);
+      toast({
+        title: "Error",
+        description: "Failed to improve prompt. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImproving(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -52,13 +99,26 @@ export function PromptInput({ value, onChange, disabled }: PromptInputProps) {
         data-testid="input-video-prompt"
         value={value}
         onChange={handleChange}
-        disabled={disabled}
+        disabled={disabled || isImproving}
         placeholder="Describe your video in detail... For example: 'Create a 2-minute educational video about the life cycle of butterflies, targeting children aged 8-12. Include colorful visuals and a cheerful tone.'"
         className={cn(
           "min-h-[160px] text-base bg-card resize-none focus-visible:ring-primary",
           showCharWarning ? "border-destructive" : "border-border"
         )}
       />
+      <div className="flex justify-end">
+        <Button
+          data-testid="button-improve-prompt"
+          onClick={handleImprovePrompt}
+          disabled={disabled || isImproving || value.trim().length < 10}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <Sparkles className="w-4 h-4" />
+          {isImproving ? "Improving..." : "Improve with AI"}
+        </Button>
+      </div>
       {showCharWarning && (
         <div 
           className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20"

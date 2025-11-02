@@ -1,8 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateScriptRequestSchema, generateAudioRequestSchema } from "@shared/schema";
-import { generateVideoScript } from "./services/openrouter";
+import { 
+  generateScriptRequestSchema, 
+  generateAudioRequestSchema,
+  improvePromptRequestSchema,
+  suggestDetailsRequestSchema 
+} from "@shared/schema";
+import { generateVideoScript, improvePrompt, suggestDetails } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
 import { searchBackgroundMusic } from "./services/freesound";
@@ -77,6 +82,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating audio:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to generate audio" 
+      });
+    }
+  });
+
+  // Improve prompt with AI
+  app.post("/api/improve-prompt", async (req, res) => {
+    try {
+      const validatedData = improvePromptRequestSchema.parse(req.body);
+      
+      const improvedPrompt = await improvePrompt(validatedData.prompt);
+      
+      res.json({ improvedPrompt });
+    } catch (error) {
+      console.error("Error improving prompt:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to improve prompt" 
+      });
+    }
+  });
+
+  // Suggest video details based on prompt
+  app.post("/api/suggest-details", async (req, res) => {
+    try {
+      const validatedData = suggestDetailsRequestSchema.parse(req.body);
+      
+      const suggestions = await suggestDetails(validatedData.prompt);
+      
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error suggesting details:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to suggest details" 
       });
     }
   });

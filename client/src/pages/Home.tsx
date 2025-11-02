@@ -64,10 +64,59 @@ export default function Home() {
     fadeOutDuration: number;
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
       setCurrentStep("details");
+    }
+  };
+
+  const handleAutoFill = async () => {
+    if (!prompt.trim()) {
+      toast({
+        title: "No prompt",
+        description: "Please enter a video description first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAutoFilling(true);
+    try {
+      const response = await fetch("/api/suggest-details", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get suggestions");
+      }
+
+      const data = await response.json();
+      
+      setMood(data.mood);
+      setCategory(data.category);
+      setPace(data.pace);
+      setAudience(data.audience);
+      setLength(data.length.toString());
+      
+      toast({
+        title: "Auto-filled!",
+        description: "AI has selected the best settings for your video.",
+      });
+    } catch (error) {
+      console.error("Error auto-filling details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to auto-fill details. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAutoFilling(false);
     }
   };
 
@@ -340,13 +389,23 @@ export default function Home() {
         {currentStep === "details" && (
           <Card className="p-8 max-w-5xl mx-auto">
             <div className="space-y-8">
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-4">
                 <h2 className="text-2xl font-serif font-bold text-foreground">
                   Customize Your Video
                 </h2>
                 <p className="text-muted-foreground">
                   Select the mood, pace, and length for your video
                 </p>
+                <Button
+                  data-testid="button-autofill-details"
+                  onClick={handleAutoFill}
+                  disabled={isAutoFilling}
+                  variant="default"
+                  className="gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {isAutoFilling ? "Auto-filling..." : "Auto-fill with AI"}
+                </Button>
               </div>
               <SelectionBoxes type="audience" selected={audience} onSelect={setAudience} />
               <SelectionBoxes type="category" selected={category} onSelect={setCategory} />

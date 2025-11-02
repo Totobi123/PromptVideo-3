@@ -126,3 +126,33 @@ export const generateAudioResponseSchema = z.object({
 });
 
 export type GenerateAudioResponse = z.infer<typeof generateAudioResponseSchema>;
+
+// Prompt improvement schemas
+export const improvePromptRequestSchema = z.object({
+  prompt: z.string().min(1, "Prompt cannot be empty"),
+});
+
+export type ImprovePromptRequest = z.infer<typeof improvePromptRequestSchema>;
+
+export const improvePromptResponseSchema = z.object({
+  improvedPrompt: z.string(),
+});
+
+export type ImprovePromptResponse = z.infer<typeof improvePromptResponseSchema>;
+
+// Auto-suggest details schemas
+export const suggestDetailsRequestSchema = z.object({
+  prompt: z.string().min(1, "Prompt cannot be empty"),
+});
+
+export type SuggestDetailsRequest = z.infer<typeof suggestDetailsRequestSchema>;
+
+export const suggestDetailsResponseSchema = z.object({
+  mood: z.enum(["happy", "casual", "sad", "promotional", "enthusiastic"]),
+  category: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment", "gospel"]),
+  pace: z.enum(["normal", "fast", "very_fast"]),
+  audience: z.enum(["kids", "teens", "adults", "professionals", "general"]),
+  length: z.number().positive(),
+});
+
+export type SuggestDetailsResponse = z.infer<typeof suggestDetailsResponseSchema>;

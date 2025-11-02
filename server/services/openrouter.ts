@@ -362,3 +362,157 @@ Generate a complete script with engaging narration, stock media recommendations,
     throw new Error(`Failed to generate script: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
+
+export async function improvePrompt(originalPrompt: string): Promise<string> {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are an AI assistant that helps improve video prompts for better video generation. 
+Your task is to take a user's basic video idea and expand it into a detailed, specific prompt that will result in a better video.
+
+IMPROVEMENTS TO MAKE:
+1. Add specific details about what should be shown or explained
+2. Clarify the target audience if not mentioned
+3. Add tone/style suggestions if appropriate
+4. Include key points that should be covered
+5. Make it more actionable and specific
+6. Keep it concise but informative (2-4 sentences)
+
+DO NOT change the core idea - only enhance and clarify it.
+Return ONLY the improved prompt text, no explanations or meta-commentary.`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: `Improve this video prompt:\n\n${originalPrompt}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const improvedPrompt = data.choices?.[0]?.message?.content?.trim();
+
+    if (!improvedPrompt) {
+      throw new Error("No improved prompt received from AI");
+    }
+
+    return improvedPrompt;
+  } catch (error) {
+    console.error("Error improving prompt:", error);
+    throw new Error(`Failed to improve prompt: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+export async function suggestDetails(prompt: string): Promise<{
+  mood: string;
+  category: string;
+  pace: string;
+  audience: string;
+  length: number;
+}> {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are an AI assistant that analyzes video prompts and suggests the best settings for video generation.
+
+Analyze the prompt and suggest:
+- mood: happy, casual, sad, promotional, or enthusiastic
+- category: tech, cooking, travel, education, gaming, fitness, vlog, review, tutorial, entertainment, or gospel
+- pace: normal, fast, or very_fast
+- audience: kids, teens, adults, professionals, or general
+- length: suggested video length in seconds (30-300)
+
+Return ONLY a JSON object with these exact fields, no markdown wrappers:
+{
+  "mood": "casual",
+  "category": "tech",
+  "pace": "normal",
+  "audience": "general",
+  "length": 60
+}`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: `Analyze this video prompt and suggest the best settings:\n\n${prompt}`,
+          },
+        ],
+        temperature: 0.5,
+        max_tokens: 200,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No suggestions received from AI");
+    }
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```json")) {
+      jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+    } else if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/```\n?/g, "");
+    }
+
+    const suggestions = JSON.parse(jsonContent);
+    
+    return {
+      mood: suggestions.mood,
+      category: suggestions.category,
+      pace: suggestions.pace,
+      audience: suggestions.audience,
+      length: suggestions.length,
+    };
+  } catch (error) {
+    console.error("Error suggesting details:", error);
+    throw new Error(`Failed to suggest details: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
