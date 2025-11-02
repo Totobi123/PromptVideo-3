@@ -87,6 +87,8 @@ export const generateScriptResponseSchema = z.object({
   audioUrl: z.string().optional(),
   musicUrl: z.string().optional(),
   musicTitle: z.string().optional(),
+  musicCreator: z.string().optional(),
+  musicLicense: z.string().optional(),
   seoPackage: z.object({
     title: z.string(),
     description: z.string(),

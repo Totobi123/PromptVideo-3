@@ -14,10 +14,17 @@ Enhanced category-driven video generation and timing accuracy:
 - **Enhanced Video/Image Mix**: Strengthened AI prompt to ensure proper mix of both videos (60-70%) and images (30-40%) across all segments
 - **Gospel Category Added**: New faith-based content category with appropriate structure, tone, and visual preferences
 
+### November 2, 2025
+Replaced Pixabay with FreeSound for background music:
+- **FreeSound Integration**: Switched from Pixabay to FreeSound API for better quality and variety of background music
+- **Attribution Support**: System now displays music creator and license information to comply with Creative Commons requirements
+- **Enhanced Music Search**: Improved mood-to-keyword mapping for more accurate music selection based on video mood
+- **Music Preview & Download**: Users can preview, download, and view attribution for the selected background music
+
 ### October 31, 2025
 Added mood-based voice selection and background music generation:
 - **Mood-Based Voice Selection**: Each mood now automatically selects an appropriate voice from Murf.ai (Happy uses Terrell, Casual uses Natalie, Sad uses Clint, Promotional uses Wayne, Enthusiastic uses Ken)
-- **Background Music Generation**: System automatically selects royalty-free background music from Kevin MacLeod's incompetech.com library based on the selected mood
+- **Background Music Generation**: System automatically selects royalty-free background music based on the selected mood
 - **Music Preview & Download**: Users can preview and download the selected background music directly from the results page
 - **Enhanced Results Display**: New VoiceAndMusicInfo component displays selected voice and music information with interactive controls
 
@@ -61,7 +68,7 @@ Preferred communication style: Simple, everyday language.
 
 **Stock Media**: Pexels API for fetching royalty-free images and videos. The application searches for media based on AI-generated descriptions, retrieving URLs and thumbnails for each media item.
 
-**Background Music**: Curated library of royalty-free music from Kevin MacLeod (incompetech.com). All tracks are CC BY 4.0 licensed. The system selects appropriate music based on the video's mood, providing variety within each mood category.
+**Background Music**: FreeSound API for royalty-free background music. The system searches FreeSound's extensive Creative Commons-licensed music library based on the video's mood, filtering for music tracks between 30-300 seconds in duration. Attribution information (creator name and license) is displayed alongside the music to comply with Creative Commons requirements.
 
 **Database**: PostgreSQL configured via Neon serverless driver (@neondatabase/serverless). Drizzle ORM provides type-safe database operations with schema management. Currently, the schema includes a basic users table (not actively used for the no-login workflow), suggesting potential future authentication features.
 

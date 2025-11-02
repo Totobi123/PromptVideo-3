@@ -41,6 +41,8 @@ export default function Home() {
   const [voiceName, setVoiceName] = useState<string>("");
   const [musicUrl, setMusicUrl] = useState<string>("");
   const [musicTitle, setMusicTitle] = useState<string>("");
+  const [musicCreator, setMusicCreator] = useState<string>("");
+  const [musicLicense, setMusicLicense] = useState<string>("");
   const [seoPackage, setSeoPackage] = useState<{
     title: string;
     description: string;
@@ -105,6 +107,8 @@ export default function Home() {
         setAudioUrl(data.audioUrl || "");
         setMusicUrl(data.musicUrl || "");
         setMusicTitle(data.musicTitle || "");
+        setMusicCreator(data.musicCreator || "");
+        setMusicLicense(data.musicLicense || "");
         setSeoPackage(data.seoPackage || null);
         setChapters(data.chapters || []);
         setCtaPlacements(data.ctaPlacements || []);
@@ -150,6 +154,8 @@ export default function Home() {
     setVoiceName("");
     setMusicUrl("");
     setMusicTitle("");
+    setMusicCreator("");
+    setMusicLicense("");
     setSeoPackage(null);
     setChapters([]);
     setCtaPlacements([]);
@@ -433,6 +439,8 @@ export default function Home() {
               audioUrl={audioUrl}
               musicTitle={musicTitle}
               musicUrl={musicUrl}
+              musicCreator={musicCreator}
+              musicLicense={musicLicense}
               onPlayVoiceover={handlePlayVoiceover}
               onDownloadVoiceover={handleDownloadVoiceover}
               onPlayMusic={handlePlayMusic}

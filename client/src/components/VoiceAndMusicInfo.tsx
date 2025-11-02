@@ -7,6 +7,8 @@ interface VoiceAndMusicInfoProps {
   audioUrl?: string;
   musicTitle?: string;
   musicUrl?: string;
+  musicCreator?: string;
+  musicLicense?: string;
   onPlayVoiceover?: () => void;
   onDownloadVoiceover?: () => void;
   onPlayMusic?: () => void;
@@ -18,6 +20,8 @@ export function VoiceAndMusicInfo({
   audioUrl,
   musicTitle,
   musicUrl,
+  musicCreator,
+  musicLicense,
   onPlayVoiceover,
   onDownloadVoiceover,
   onPlayMusic,
@@ -75,7 +79,18 @@ export function VoiceAndMusicInfo({
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">Background Music</p>
-                <p className="text-sm text-muted-foreground mb-2">{musicTitle}</p>
+                <p className="text-sm text-muted-foreground">{musicTitle}</p>
+                {musicCreator && (
+                  <p className="text-xs text-muted-foreground" data-testid="text-music-creator">
+                    By {musicCreator}
+                  </p>
+                )}
+                {musicLicense && (
+                  <p className="text-xs text-muted-foreground mb-2" data-testid="text-music-license">
+                    License: {musicLicense}
+                  </p>
+                )}
+                {!musicCreator && !musicLicense && <div className="mb-2" />}
                 <div className="flex gap-2">
                   <Button
                     data-testid="button-play-music"

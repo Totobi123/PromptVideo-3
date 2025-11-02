@@ -5,7 +5,7 @@ import { generateScriptRequestSchema, generateAudioRequestSchema } from "@shared
 import { generateVideoScript } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
-import { searchBackgroundMusic } from "./services/pixabay";
+import { searchBackgroundMusic } from "./services/freesound";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Generate video script with AI
@@ -46,6 +46,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         audioUrl,
         musicUrl: musicInfo?.url,
         musicTitle: musicInfo?.title,
+        musicCreator: musicInfo?.creator,
+        musicLicense: musicInfo?.license,
         seoPackage: result.seoPackage,
         chapters: result.chapters,
         ctaPlacements: result.ctaPlacements,
