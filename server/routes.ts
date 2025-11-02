@@ -10,6 +10,7 @@ import {
 } from "@shared/schema";
 import { generateVideoScript, improvePrompt, suggestDetails } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
+import { generateAIImage } from "./services/cloudflare-ai";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
 import { searchBackgroundMusic } from "./services/freesound";
 import { renderVideo } from "./services/videoRenderer";
@@ -29,12 +30,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Combine all script text for audio generation
       const fullScriptText = result.segments.map(seg => seg.text).join(" ");
       
-      // Fetch background music, stock media URLs, and generate audio in parallel
+      // Fetch background music, media URLs (stock or AI), and generate audio in parallel
       const [musicInfo, mediaItemsWithUrls, audioUrl] = await Promise.all([
         searchBackgroundMusic(validatedData.mood),
         Promise.all(
           result.mediaItems.map(async (item) => {
-            const media = await searchPexelsMedia(item.description, item.type);
+            let media;
+            if (validatedData.mediaSource === "ai") {
+              media = await generateAIImage(item.description);
+            } else {
+              media = await searchPexelsMedia(item.description, item.type);
+            }
             return {
               ...item,
               url: media.url,
