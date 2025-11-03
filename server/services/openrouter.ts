@@ -1,7 +1,6 @@
 import type { GenerateScriptRequest, ScriptSegment, MediaItem } from "@shared/schema";
 import { aiScriptResponseSchema } from "@shared/schema";
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export async function generateVideoScript(request: GenerateScriptRequest): Promise<{ 
@@ -12,6 +11,7 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   ctaPlacements?: any[],
   musicMixing?: any
 }> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
@@ -373,6 +373,7 @@ Generate a complete script with engaging narration, stock media recommendations,
 }
 
 export async function improvePrompt(originalPrompt: string): Promise<string> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
@@ -443,6 +444,7 @@ export async function suggestDetails(prompt: string): Promise<{
   audience: string;
   length: number;
 }> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
