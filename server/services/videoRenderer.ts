@@ -190,15 +190,21 @@ export async function renderVideo(
     
     await storage.updateRenderJob(jobId, { progress: 60 });
 
-    const musicVolume = request.musicMixing?.backgroundMusicVolume ?? 0.3;
+    const musicVolume = request.musicMixing?.backgroundMusicVolume ?? 0.2;
     const voiceVolume = request.musicMixing?.voiceoverVolume ?? 1.0;
 
     let audioPath: string;
     if (musicPath) {
-      console.log(`[${jobId}] Mixing voiceover and background music (voice: ${voiceVolume}, music: ${musicVolume})`);
-      audioPath = path.join(tempDir, "mixed_audio.mp3");
-      await mixAudio(voiceoverPath, musicPath, audioPath, voiceVolume, musicVolume);
-      await storage.updateRenderJob(jobId, { progress: 75 });
+      try {
+        console.log(`[${jobId}] Mixing voiceover and background music (voice: ${voiceVolume}, music: ${musicVolume})`);
+        audioPath = path.join(tempDir, "mixed_audio.aac");
+        await mixAudio(voiceoverPath, musicPath, audioPath, voiceVolume, musicVolume);
+        await storage.updateRenderJob(jobId, { progress: 75 });
+      } catch (error) {
+        console.warn(`[${jobId}] Failed to mix audio, falling back to voiceover only:`, error);
+        audioPath = voiceoverPath;
+        await storage.updateRenderJob(jobId, { progress: 75 });
+      }
     } else {
       console.log(`[${jobId}] Using voiceover only (no background music)`);
       audioPath = voiceoverPath;
@@ -309,14 +315,47 @@ function mixAudio(
       .input(voiceoverPath)
       .input(musicPath)
       .complexFilter([
-        `[0:a]volume=${voiceVolume}[voice]`,
-        `[1:a]volume=${musicVolume}[music]`,
-        `[voice][music]amix=inputs=2:duration=first:dropout_transition=2[aout]`
-      ])
-      .outputOptions(["-map", "[aout]", "-c:a", "aac", "-b:a", "128k"])
+        {
+          filter: 'volume',
+          options: voiceVolume,
+          inputs: '0:a',
+          outputs: 'voice'
+        },
+        {
+          filter: 'aloop',
+          options: { loop: -1, size: 2e+09 },
+          inputs: '1:a',
+          outputs: 'musicloop'
+        },
+        {
+          filter: 'volume',
+          options: musicVolume,
+          inputs: 'musicloop',
+          outputs: 'music'
+        },
+        {
+          filter: 'amix',
+          options: { inputs: 2, duration: 'first', dropout_transition: 0 },
+          inputs: ['voice', 'music'],
+          outputs: 'aout'
+        }
+      ], 'aout')
+      .audioCodec('aac')
+      .audioBitrate('192k')
       .output(outputPath)
+      .on("start", (commandLine) => {
+        console.log('FFmpeg audio mixing command:', commandLine);
+      })
+      .on("stderr", (stderrLine) => {
+        console.log('FFmpeg stderr:', stderrLine);
+      })
       .on("end", () => resolve())
-      .on("error", (err) => reject(new Error(`Failed to mix audio: ${err.message}`)))
+      .on("error", (err, stdout, stderr) => {
+        console.error('FFmpeg audio mixing error:', err);
+        console.error('FFmpeg stdout:', stdout);
+        console.error('FFmpeg stderr:', stderr);
+        reject(new Error(`Failed to mix audio: ${err.message}`));
+      })
       .run();
   });
 }
