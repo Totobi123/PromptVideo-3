@@ -321,25 +321,111 @@ function normalizeMediaFile(
   });
 }
 
-function concatenateMedia(
+function getVideoDuration(filePath: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const duration = metadata.format.duration;
+      if (typeof duration === 'number' && duration > 0) {
+        resolve(duration);
+      } else {
+        reject(new Error(`Could not determine duration for ${filePath}`));
+      }
+    });
+  });
+}
+
+async function concatenateMedia(
   workDir: string,
   concatListPath: string,
   outputPath: string
 ): Promise<void> {
+  const concatContent = fs.readFileSync(concatListPath, 'utf-8');
+  const lines = concatContent.split('\n');
+  
+  const mediaFiles: string[] = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('file')) {
+      const match = trimmed.match(/file '(.+)'/);
+      if (match) {
+        mediaFiles.push(match[1]);
+      }
+    }
+  }
+
+  if (mediaFiles.length === 0) {
+    throw new Error('No media files found in concat list');
+  }
+
+  if (mediaFiles.length === 1) {
+    return new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(mediaFiles[0])
+        .outputOptions([
+          "-c:v", "libx264",
+          "-pix_fmt", "yuv420p",
+          "-preset", "medium",
+          "-crf", "23",
+          "-an"
+        ])
+        .output(outputPath)
+        .on("end", () => resolve())
+        .on("error", (err) => reject(new Error(`Failed to process single media: ${err.message}`)))
+        .run();
+    });
+  }
+
+  const actualDurations: number[] = [];
+  for (const file of mediaFiles) {
+    const duration = await getVideoDuration(file);
+    actualDurations.push(duration);
+  }
+
   return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(concatListPath)
-      .inputOptions(["-f", "concat", "-safe", "0"])
+    const command = ffmpeg();
+    mediaFiles.forEach(file => command.input(file));
+
+    const fadeDuration = 0.5;
+    const filterComplex: string[] = [];
+    
+    let cumulativeOffset = 0;
+    for (let i = 0; i < mediaFiles.length - 1; i++) {
+      const offset = Math.max(0, cumulativeOffset + actualDurations[i] - fadeDuration);
+      
+      if (i === 0) {
+        filterComplex.push(
+          `[0:v][1:v]xfade=transition=fade:duration=${fadeDuration}:offset=${offset.toFixed(3)}[v01]`
+        );
+      } else if (i === mediaFiles.length - 2) {
+        filterComplex.push(
+          `[v0${i}][${i + 1}:v]xfade=transition=fade:duration=${fadeDuration}:offset=${offset.toFixed(3)}[vout]`
+        );
+      } else {
+        filterComplex.push(
+          `[v0${i}][${i + 1}:v]xfade=transition=fade:duration=${fadeDuration}:offset=${offset.toFixed(3)}[v0${i + 1}]`
+        );
+      }
+      
+      cumulativeOffset += actualDurations[i] - fadeDuration;
+    }
+
+    command
+      .complexFilter(filterComplex)
       .outputOptions([
+        "-map", mediaFiles.length === 2 ? "[v01]" : "[vout]",
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
         "-preset", "medium",
-        "-crf", "23",
-        "-an"
+        "-crf", "23"
       ])
       .output(outputPath)
       .on("end", () => resolve())
-      .on("error", (err) => reject(new Error(`Failed to concatenate media: ${err.message}`)))
+      .on("error", (err) => reject(new Error(`Failed to concatenate media with transitions: ${err.message}`)))
       .run();
   });
 }
