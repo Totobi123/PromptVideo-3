@@ -2,11 +2,20 @@
 
 ## Overview
 
-Tivideo is a web application that generates professional video scripts with AI-powered content, mood-based voiceover recommendations, stock media suggestions, and royalty-free background music. Users can create YouTube-style video scripts by describing their video concept, selecting mood and pace preferences, and receiving timestamped scripts with corresponding visual media recommendations, voice selection, and background music. The platform requires no user authentication and focuses on a streamlined, single-page generation workflow.
+Tivideo is a web application that generates professional video scripts with AI-powered content, mood-based voiceover recommendations, stock media suggestions, and royalty-free background music. Users can create YouTube-style video scripts by describing their video concept, selecting mood and pace preferences, and receiving timestamped scripts with corresponding visual media recommendations, voice selection, and background music. The platform uses Supabase authentication (email/password and Google OAuth) to secure access and enable future user-specific features.
 
 ## Recent Changes
 
-### November 3, 2025
+### November 3, 2025 (Latest)
+**Supabase Authentication Integration**:
+- **User Authentication**: Integrated Supabase for secure user authentication with email/password and Google OAuth support
+- **Landing Page**: Created professional landing page with hero section and call-to-action buttons
+- **Sign Up/Sign In Pages**: Dedicated authentication pages with email/password forms and Google OAuth buttons
+- **Protected Routes**: Dashboard (formerly Home) is now protected and requires authentication to access
+- **Session Management**: AuthContext handles user sessions, authentication state, and automatic redirects
+- **User Profile**: Header includes user dropdown menu with profile info and sign-out functionality
+- **Public/Protected Routing**: Automatic redirects based on authentication state (authenticated users → dashboard, unauthenticated → landing/sign-in)
+
 **Smart Media Source Selection & AI Image Rendering Fix**:
 - **Auto-Select (Smart) Media Source**: Added intelligent media source selection that analyzes each scene and automatically chooses between AI generation and stock media. The system uses AI for specific stories, abstract concepts, unique scenarios, detailed characters, and creative content, while using stock media for generic scenes, nature, common objects, and typical activities.
 - **Three Media Source Options**: Users can now choose "Stock Images/Videos", "AI Generated Images", or "Auto-Select (Smart)" for optimal results
@@ -66,7 +75,11 @@ Preferred communication style: Simple, everyday language.
 
 **State Management**: React Query (@tanstack/react-query) handles server state and API calls. Local component state manages the multi-step form flow (prompt → details → generating → results).
 
-**Routing**: Uses wouter for lightweight client-side routing, though the application is primarily single-page with the home route handling the main workflow.
+**Routing**: Uses wouter for lightweight client-side routing with protected and public route handling. Routes include:
+- `/` - Landing page (public, redirects to dashboard if authenticated)
+- `/signup` - Sign up page (public, redirects to dashboard if authenticated)
+- `/signin` - Sign in page (public, redirects to dashboard if authenticated)
+- `/dashboard` - Main video generation workflow (protected, requires authentication)
 
 **Form Handling**: React Hook Form with Zod validation for type-safe form management and validation.
 
@@ -92,13 +105,23 @@ Preferred communication style: Simple, everyday language.
 
 **Background Music**: FreeSound API for royalty-free background music. The system searches FreeSound's extensive Creative Commons-licensed music library based on the video's mood, filtering for music tracks between 30-300 seconds in duration. Attribution information (creator name and license) is displayed alongside the music to comply with Creative Commons requirements.
 
-**Database**: PostgreSQL configured via Neon serverless driver (@neondatabase/serverless). Drizzle ORM provides type-safe database operations with schema management. Currently, the schema includes a basic users table (not actively used for the no-login workflow), suggesting potential future authentication features.
+**Authentication**: Supabase (@supabase/supabase-js) provides secure user authentication with email/password and Google OAuth support. Environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are stored securely in Replit Secrets.
 
-**Session Management**: Infrastructure exists for session management via connect-pg-simple (PostgreSQL session store), though not currently utilized due to the no-login requirement.
+**Session Management**: AuthContext manages user sessions using Supabase's authentication state listener. Sessions persist across page refreshes, and automatic redirects ensure proper access control based on authentication state.
+
+**Database**: PostgreSQL configured via Neon serverless driver (@neondatabase/serverless). Drizzle ORM provides type-safe database operations with schema management.
 
 ### Data Flow
 
-1. User inputs video description and selects preferences (mood, pace, length)
+**Authentication Flow**:
+1. User visits landing page and clicks sign up or sign in
+2. User authenticates via email/password or Google OAuth
+3. Supabase handles authentication and returns session
+4. AuthContext updates app state and redirects to dashboard
+5. Protected routes check authentication before rendering
+
+**Video Generation Flow**:
+1. Authenticated user inputs video description and selects preferences (mood, pace, length)
 2. Frontend sends request to `/api/generate-script` with validated parameters
 3. Backend calls OpenRouter API to generate structured script with timestamps
 4. Backend fetches real stock media URLs from Pexels for each media recommendation
@@ -107,7 +130,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Architectural Decisions
 
-**No Authentication**: The application intentionally avoids user authentication to reduce friction. This decision enables instant access but limits features like saving history or user preferences.
+**Supabase Authentication**: The application uses Supabase for secure user authentication with email/password and Google OAuth support. This enables future features like saving video projects, viewing history, and personal preferences while maintaining security best practices.
 
 **Multi-Step Form Flow**: The UI uses a stepped approach (prompt → details → generating → results) to guide users through the generation process. This breaks down complexity and provides clear progress feedback.
 
