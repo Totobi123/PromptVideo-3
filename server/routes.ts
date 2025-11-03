@@ -40,7 +40,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Promise.all(
           result.mediaItems.map(async (item, index) => {
             let media;
-            if (validatedData.mediaSource === "ai") {
+            // Determine which media source to use
+            let effectiveMediaSource = validatedData.mediaSource;
+            if (validatedData.mediaSource === "auto") {
+              // Use AI's suggestion, default to stock if not provided
+              effectiveMediaSource = item.suggestedMediaSource || "stock";
+              console.log(`Auto-selecting ${effectiveMediaSource} for media ${index + 1} based on AI suggestion`);
+            }
+            
+            if (effectiveMediaSource === "ai") {
               console.log(`Generating AI image ${index + 1}/${result.mediaItems.length}: "${item.description}"`);
               media = await generateAIImage(item.description);
               console.log(`AI image ${index + 1} generated:`, media.url ? "SUCCESS" : "FAILED");

@@ -60,6 +60,7 @@ const categoryOptions: SelectionOption[] = [
 const mediaSourceOptions: SelectionOption[] = [
   { value: "stock", label: "Stock Images/Videos", icon: <Image className="w-5 h-5" /> },
   { value: "ai", label: "AI Generated Images", icon: <Wand2 className="w-5 h-5" /> },
+  { value: "auto", label: "Auto-Select (Smart)", icon: <Sparkles className="w-5 h-5" /> },
 ];
 
 export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps) {

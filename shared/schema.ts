@@ -25,7 +25,7 @@ export const generateScriptRequestSchema = z.object({
   length: z.number().positive(),
   audience: z.enum(["kids", "teens", "adults", "professionals", "general"]),
   category: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment", "gospel"]),
-  mediaSource: z.enum(["stock", "ai"]).default("stock"),
+  mediaSource: z.enum(["stock", "ai", "auto"]).default("stock"),
 });
 
 export type GenerateScriptRequest = z.infer<typeof generateScriptRequestSchema>;
@@ -51,6 +51,7 @@ export const mediaItemSchema = z.object({
   thumbnail: z.string().optional(),
   isThumbnailCandidate: z.boolean().optional(),
   transition: z.string().optional(),
+  suggestedMediaSource: z.enum(["stock", "ai"]).optional(),
 });
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;

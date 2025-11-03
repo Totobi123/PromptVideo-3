@@ -192,9 +192,10 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
       "type": "video",
       "startTime": "00:00",
       "endTime": "00:05",
-      "description": "Specific, detailed description for stock search",
+      "description": "Specific, detailed description for stock search or AI generation",
       "isThumbnailCandidate": true,
-      "transition": "fade"
+      "transition": "fade",
+      "suggestedMediaSource": "stock"
     }
   ],
   "seoPackage": {
@@ -241,7 +242,12 @@ GUIDELINES:
    - Media Preference: ${categoryGuide.mediaPreference}
    - Each media item: 3-8 seconds duration
    - Cover the full segment duration
-   - Detailed descriptions for better stock search results
+   - IMPORTANT: For each media item, analyze the content and set "suggestedMediaSource":
+     * Use "ai" for: Specific stories, abstract concepts, unique scenarios, detailed characters, fantasy/sci-fi, custom branding, specific emotions/expressions, historical recreations, educational diagrams, or anything requiring precise creative control
+     * Use "stock" for: Generic scenes, nature/landscapes, common objects, typical people/activities, cityscapes, food, sports, business settings, or any widely available real-world content
+   - Write HIGHLY SPECIFIC descriptions that will work well for both AI generation AND stock search
+   - For AI items: Be very detailed about composition, style, mood, and specific elements
+   - For stock items: Use clear, searchable keywords that match common stock library content
    - Mark 1-2 items as thumbnail candidates
    
 4. SEO PACKAGE:
