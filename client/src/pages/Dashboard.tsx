@@ -46,7 +46,7 @@ const stepTransition = {
   ease: "easeInOut",
 };
 
-export default function Home() {
+export default function Dashboard() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<Step>("prompt");
   const [prompt, setPrompt] = useState("");
