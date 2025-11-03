@@ -3,15 +3,27 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AnimatePresence } from "framer-motion";
+import { AnimatedRoute } from "@/components/AnimatedRoute";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait">
+      <Switch>
+        <Route path="/">
+          <AnimatedRoute>
+            <Home />
+          </AnimatedRoute>
+        </Route>
+        <Route>
+          <AnimatedRoute>
+            <NotFound />
+          </AnimatedRoute>
+        </Route>
+      </Switch>
+    </AnimatePresence>
   );
 }
 
