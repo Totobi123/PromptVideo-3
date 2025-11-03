@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { SelectionBoxes } from "@/components/SelectionBoxes";
@@ -24,6 +25,26 @@ const steps = [
   { id: "generating", label: "Generate" },
   { id: "results", label: "Results" },
 ];
+
+const stepVariants = {
+  initial: {
+    opacity: 0,
+    x: 50,
+  },
+  animate: {
+    opacity: 1,
+    x: 0,
+  },
+  exit: {
+    opacity: 0,
+    x: -50,
+  },
+};
+
+const stepTransition = {
+  duration: 0.4,
+  ease: "easeInOut",
+};
 
 export default function Home() {
   const { toast } = useToast();
@@ -474,218 +495,256 @@ export default function Home() {
           <ProgressSteps currentStep={getCurrentStepNumber()} steps={steps} />
         </div>
 
-        {currentStep === "prompt" && (
-          <Card className="p-8 max-w-3xl mx-auto">
-            <div className="space-y-6">
-              <div className="text-center space-y-2">
-                <h2 className="text-3xl font-serif font-bold text-foreground">
-                  Create Your Video Script
-                </h2>
-                <p className="text-muted-foreground">
-                  Describe your video idea and let AI generate a professional script with voiceover and media recommendations
-                </p>
-              </div>
-              <PromptInput value={prompt} onChange={setPrompt} />
-              <Button
-                data-testid="button-continue-to-details"
-                onClick={handleContinueToDetails}
-                disabled={!prompt.trim()}
-                size="lg"
-                className="w-full gap-2"
-              >
-                <Sparkles className="w-5 h-5" />
-                Continue to Details
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {currentStep === "details" && (
-          <Card className="p-8 max-w-5xl mx-auto">
-            <div className="space-y-8">
-              <div className="text-center space-y-4">
-                <h2 className="text-2xl font-serif font-bold text-foreground">
-                  Customize Your Video
-                </h2>
-                <p className="text-muted-foreground">
-                  Select the mood, pace, and length for your video
-                </p>
-                <Button
-                  data-testid="button-autofill-details"
-                  onClick={handleAutoFill}
-                  disabled={isAutoFilling}
-                  variant="default"
-                  className="gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {isAutoFilling ? "Auto-filling..." : "Auto-fill with AI"}
-                </Button>
-              </div>
-              <SelectionBoxes type="audience" selected={audience} onSelect={setAudience} />
-              <SelectionBoxes type="category" selected={category} onSelect={setCategory} />
-              <SelectionBoxes type="mediaSource" selected={mediaSource} onSelect={setMediaSource} />
-              <SelectionBoxes type="mood" selected={mood} onSelect={setMood} />
-              <SelectionBoxes type="pace" selected={pace} onSelect={setPace} />
-              <SelectionBoxes type="length" selected={length} onSelect={setLength} />
-              <div className="flex gap-3 justify-center">
-                <Button
-                  data-testid="button-back-to-prompt"
-                  onClick={() => setCurrentStep("prompt")}
-                  variant="outline"
-                  size="lg"
-                >
-                  Back
-                </Button>
-                <Button
-                  data-testid="button-generate-script"
-                  onClick={handleGenerate}
-                  disabled={!mood || !pace || !length || !audience || !category}
-                  size="lg"
-                  className="gap-2"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Generate Script
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {currentStep === "generating" && (
-          <div className="max-w-2xl mx-auto">
-            <LoadingState
-              message={`AI is generating your video script with ${mediaSource === "ai" ? "AI-generated images" : "stock media"}...`}
-              progress={progress}
-            />
-          </div>
-        )}
-
-        {currentStep === "results" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-serif font-bold text-foreground">
-                Your Video Script is Ready!
-              </h2>
-              <Button
-                data-testid="button-start-over"
-                onClick={handleStartOver}
-                variant="outline"
-                className="gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Start Over
-              </Button>
-            </div>
-            
-            {scriptSegments.length === 0 && (
-              <Card className="p-6">
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <AlertCircle className="w-5 h-5" />
-                  <p>No script segments generated. Please try again.</p>
+        <AnimatePresence mode="wait">
+          {currentStep === "prompt" && (
+            <motion.div
+              key="prompt"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepTransition}
+            >
+              <Card className="p-8 max-w-3xl mx-auto">
+                <div className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <h2 className="text-3xl font-serif font-bold text-foreground">
+                      Create Your Video Script
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Describe your video idea and let AI generate a professional script with voiceover and media recommendations
+                    </p>
+                  </div>
+                  <PromptInput value={prompt} onChange={setPrompt} />
+                  <Button
+                    data-testid="button-continue-to-details"
+                    onClick={handleContinueToDetails}
+                    disabled={!prompt.trim()}
+                    size="lg"
+                    className="w-full gap-2"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Continue to Details
+                  </Button>
                 </div>
               </Card>
-            )}
-            
-            <div className="grid lg:grid-cols-2 gap-6">
-              <ScriptTimeline segments={scriptSegments} />
-              <MediaRecommendations items={mediaItems} />
-            </div>
-            
-            <VoiceAndMusicInfo
-              voiceName={voiceName}
-              audioUrl={audioUrl}
-              musicTitle={musicTitle}
-              musicUrl={musicUrl}
-              musicCreator={musicCreator}
-              musicLicense={musicLicense}
-              onDownloadVoiceover={handleDownloadVoiceover}
-              onDownloadMusic={handleDownloadMusic}
-            />
+            </motion.div>
+          )}
 
-            {seoPackage && (
-              <SEOPackage seoPackage={seoPackage} />
-            )}
-
-            {(chapters.length > 0 || ctaPlacements.length > 0 || musicMixing) && (
-              <ProductionInfo
-                chapters={chapters}
-                ctaPlacements={ctaPlacements}
-                musicMixing={musicMixing || undefined}
-              />
-            )}
-
-            <Card className="p-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Export Your Content
-                </h3>
-                <ExportButtons
-                  onExportScript={handleExportScript}
-                  onExportAudio={handleExportAudio}
-                  onExportMedia={handleExportMedia}
-                />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Render Final Video
-                  </h3>
-                  {videoUrl && (
+          {currentStep === "details" && (
+            <motion.div
+              key="details"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepTransition}
+            >
+              <Card className="p-8 max-w-5xl mx-auto">
+                <div className="space-y-8">
+                  <div className="text-center space-y-4">
+                    <h2 className="text-2xl font-serif font-bold text-foreground">
+                      Customize Your Video
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Select the mood, pace, and length for your video
+                    </p>
                     <Button
-                      data-testid="button-download-video"
-                      onClick={handleDownloadVideo}
-                      variant="outline"
+                      data-testid="button-autofill-details"
+                      onClick={handleAutoFill}
+                      disabled={isAutoFilling}
+                      variant="default"
                       className="gap-2"
                     >
-                      <Download className="w-4 h-4" />
-                      Download Video
+                      <Sparkles className="w-4 h-4" />
+                      {isAutoFilling ? "Auto-filling..." : "Auto-fill with AI"}
                     </Button>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Combine your script, voiceover, music, and media into a final MP4 video.
-                </p>
-                
-                {isRendering && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Rendering video...</span>
-                      <span className="font-medium">{renderProgress}%</span>
-                    </div>
-                    <Progress value={renderProgress} data-testid="progress-video-render" />
                   </div>
-                )}
-
-                {videoUrl && (
-                  <div className="rounded-lg border overflow-hidden">
-                    <video
-                      data-testid="video-preview"
-                      controls
-                      className="w-full"
-                      src={videoUrl}
+                  <SelectionBoxes type="audience" selected={audience} onSelect={setAudience} />
+                  <SelectionBoxes type="category" selected={category} onSelect={setCategory} />
+                  <SelectionBoxes type="mediaSource" selected={mediaSource} onSelect={setMediaSource} />
+                  <SelectionBoxes type="mood" selected={mood} onSelect={setMood} />
+                  <SelectionBoxes type="pace" selected={pace} onSelect={setPace} />
+                  <SelectionBoxes type="length" selected={length} onSelect={setLength} />
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      data-testid="button-back-to-prompt"
+                      onClick={() => setCurrentStep("prompt")}
+                      variant="outline"
+                      size="lg"
                     >
-                      Your browser does not support the video tag.
-                    </video>
+                      Back
+                    </Button>
+                    <Button
+                      data-testid="button-generate-script"
+                      onClick={handleGenerate}
+                      disabled={!mood || !pace || !length || !audience || !category}
+                      size="lg"
+                      className="gap-2"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Generate Script
+                    </Button>
                   </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {currentStep === "generating" && (
+            <motion.div
+              key="generating"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepTransition}
+            >
+              <div className="max-w-2xl mx-auto">
+                <LoadingState
+                  message={`AI is generating your video script with ${mediaSource === "ai" ? "AI-generated images" : "stock media"}...`}
+                  progress={progress}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {currentStep === "results" && (
+            <motion.div
+              key="results"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepTransition}
+            >
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-serif font-bold text-foreground">
+                    Your Video Script is Ready!
+                  </h2>
+                  <Button
+                    data-testid="button-start-over"
+                    onClick={handleStartOver}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Start Over
+                  </Button>
+                </div>
+                
+                {scriptSegments.length === 0 && (
+                  <Card className="p-6">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <AlertCircle className="w-5 h-5" />
+                      <p>No script segments generated. Please try again.</p>
+                    </div>
+                  </Card>
+                )}
+                
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <ScriptTimeline segments={scriptSegments} />
+                  <MediaRecommendations items={mediaItems} />
+                </div>
+                
+                <VoiceAndMusicInfo
+                  voiceName={voiceName}
+                  audioUrl={audioUrl}
+                  musicTitle={musicTitle}
+                  musicUrl={musicUrl}
+                  musicCreator={musicCreator}
+                  musicLicense={musicLicense}
+                  onDownloadVoiceover={handleDownloadVoiceover}
+                  onDownloadMusic={handleDownloadMusic}
+                />
+
+                {seoPackage && (
+                  <SEOPackage seoPackage={seoPackage} />
                 )}
 
-                <Button
-                  data-testid="button-make-video"
-                  onClick={handleMakeVideo}
-                  disabled={isRendering || !audioUrl}
-                  size="lg"
-                  className="w-full gap-2"
-                >
-                  <Video className="w-5 h-5" />
-                  {isRendering ? "Rendering..." : videoUrl ? "Render Again" : "Make Video Now"}
-                </Button>
+                {(chapters.length > 0 || ctaPlacements.length > 0 || musicMixing) && (
+                  <ProductionInfo
+                    chapters={chapters}
+                    ctaPlacements={ctaPlacements}
+                    musicMixing={musicMixing || undefined}
+                  />
+                )}
+
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Export Your Content
+                    </h3>
+                    <ExportButtons
+                      onExportScript={handleExportScript}
+                      onExportAudio={handleExportAudio}
+                      onExportMedia={handleExportMedia}
+                    />
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Render Final Video
+                      </h3>
+                      {videoUrl && (
+                        <Button
+                          data-testid="button-download-video"
+                          onClick={handleDownloadVideo}
+                          variant="outline"
+                          className="gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Video
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Combine your script, voiceover, music, and media into a final MP4 video.
+                    </p>
+                    
+                    {isRendering && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Rendering video...</span>
+                          <span className="font-medium">{renderProgress}%</span>
+                        </div>
+                        <Progress value={renderProgress} data-testid="progress-video-render" />
+                      </div>
+                    )}
+
+                    {videoUrl && (
+                      <div className="rounded-lg border overflow-hidden">
+                        <video
+                          data-testid="video-preview"
+                          controls
+                          className="w-full"
+                          src={videoUrl}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    )}
+
+                    <Button
+                      data-testid="button-make-video"
+                      onClick={handleMakeVideo}
+                      disabled={isRendering || !audioUrl}
+                      size="lg"
+                      className="w-full gap-2"
+                    >
+                      <Video className="w-5 h-5" />
+                      {isRendering ? "Rendering..." : videoUrl ? "Render Again" : "Make Video Now"}
+                    </Button>
+                  </div>
+                </Card>
               </div>
-            </Card>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
