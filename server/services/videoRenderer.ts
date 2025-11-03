@@ -53,7 +53,47 @@ function parseTime(timeStr: string): number {
   return parseFloat(timeStr);
 }
 
+const ALLOWED_LOCAL_DIRS = [
+  path.join(process.cwd(), "output", "ai-images")
+];
+
+function isLocalPath(url: string): boolean {
+  return url.startsWith("/output/ai-images/");
+}
+
+function copyLocalFile(sourcePath: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const fullSourcePath = path.resolve(process.cwd(), `.${sourcePath}`);
+    
+    const isAllowed = ALLOWED_LOCAL_DIRS.some(allowedDir => {
+      return fullSourcePath.startsWith(allowedDir);
+    });
+    
+    if (!isAllowed) {
+      reject(new Error(`Local file path not allowed: ${sourcePath}`));
+      return;
+    }
+    
+    if (!fs.existsSync(fullSourcePath)) {
+      reject(new Error(`Local file not found: ${fullSourcePath}`));
+      return;
+    }
+    
+    fs.copyFile(fullSourcePath, dest, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 function downloadFile(url: string, dest: string): Promise<void> {
+  if (isLocalPath(url)) {
+    return copyLocalFile(url, dest);
+  }
+  
   if (!isUrlSafe(url)) {
     return Promise.reject(new Error(`URL not allowed: ${url}`));
   }
@@ -138,7 +178,8 @@ export async function renderVideo(
       const rawFilePath = path.join(tempDir, `raw_media${i}.${ext}`);
       const normalizedFilePath = path.join(tempDir, `media${i}.mp4`);
       
-      console.log(`[${jobId}] Downloading media ${i} (${item.type}): ${item.url}`);
+      const isLocal = isLocalPath(item.url);
+      console.log(`[${jobId}] ${isLocal ? 'Copying local' : 'Downloading'} media ${i} (${item.type}): ${item.url}`);
       await downloadFile(item.url, rawFilePath);
       
       const startTime = parseTime(item.startTime);
