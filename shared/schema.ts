@@ -36,7 +36,7 @@ export const scriptSegmentSchema = z.object({
   text: z.string(),
   emotionMarkers: z.array(z.object({
     word: z.string(),
-    emotion: z.enum(["emphasize", "pause", "excited", "calm", "urgent", "enthusiasm"]),
+    emotion: z.string(),
   })).optional(),
 });
 
@@ -50,7 +50,7 @@ export const mediaItemSchema = z.object({
   url: z.string().optional(),
   thumbnail: z.string().optional(),
   isThumbnailCandidate: z.boolean().optional(),
-  transition: z.enum(["cut", "fade", "zoom"]).optional(),
+  transition: z.string().optional(),
 });
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;
@@ -69,7 +69,7 @@ export const aiScriptResponseSchema = z.object({
   })).optional(),
   ctaPlacements: z.array(z.object({
     timestamp: z.string(),
-    type: z.enum(["subscribe", "like", "comment", "link", "product"]),
+    type: z.string(),
     message: z.string(),
   })).optional(),
   musicMixing: z.object({
@@ -101,7 +101,7 @@ export const generateScriptResponseSchema = z.object({
   })).optional(),
   ctaPlacements: z.array(z.object({
     timestamp: z.string(),
-    type: z.enum(["subscribe", "like", "comment", "link", "product"]),
+    type: z.string(),
     message: z.string(),
   })).optional(),
   musicMixing: z.object({
