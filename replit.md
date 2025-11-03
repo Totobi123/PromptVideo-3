@@ -6,6 +6,15 @@ Tivideo is a web application that generates professional video scripts with AI-p
 
 ## Recent Changes
 
+### November 3, 2025
+**Smart Media Source Selection & AI Image Rendering Fix**:
+- **Auto-Select (Smart) Media Source**: Added intelligent media source selection that analyzes each scene and automatically chooses between AI generation and stock media. The system uses AI for specific stories, abstract concepts, unique scenarios, detailed characters, and creative content, while using stock media for generic scenes, nature, common objects, and typical activities.
+- **Three Media Source Options**: Users can now choose "Stock Images/Videos", "AI Generated Images", or "Auto-Select (Smart)" for optimal results
+- **Enhanced Media Descriptions**: AI now generates highly specific, detailed descriptions optimized for both AI generation and stock searches, improving relevance and quality
+- **Fixed AI Image Video Rendering**: Resolved critical issue where AI-generated images couldn't be used in video rendering due to local file path restrictions
+- **Secure Local File Handling**: Implemented whitelisted directory access for AI-generated images with security validation to prevent directory traversal attacks
+- **Per-Item Media Source Suggestion**: Each media item now includes an AI-suggested media source (stock or AI) stored in the `suggestedMediaSource` field
+
 ### November 1, 2025
 Enhanced category-driven video generation and timing accuracy:
 - **Category-Specific Video Output**: Each of the 11 video categories (Tech, Cooking, Travel, Education, Gaming, Fitness, Vlog, Review, Tutorial, Entertainment, Gospel) now has comprehensive guidelines that determine the video's structure, tone, media preferences, CTA style, and keywords
