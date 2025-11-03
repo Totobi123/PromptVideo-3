@@ -198,13 +198,8 @@ export default function Home() {
           
           toast({
             title: "Script Generated!",
-            description: `Your video script is ready. Starting video generation...`,
+            description: `Your video script is ready with voiceover and music.`,
           });
-          
-          // Auto-start video rendering
-          setTimeout(() => {
-            handleMakeVideo();
-          }, 1000);
         }, 500);
       } catch (error) {
         console.error("Error generating script:", error);
