@@ -381,7 +381,10 @@ export function getAudioDuration(audioUrl: string): Promise<number> {
         }
       });
     } else {
-      const localPath = audioUrl.startsWith('/') ? path.join(process.cwd(), audioUrl) : audioUrl;
+      let localPath = audioUrl;
+      if (audioUrl.startsWith('/output/') || audioUrl.startsWith('/temp/')) {
+        localPath = path.join(process.cwd(), audioUrl);
+      }
       ffmpeg.ffprobe(localPath, (err, metadata) => {
         if (err) {
           reject(err);
