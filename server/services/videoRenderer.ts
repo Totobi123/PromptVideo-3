@@ -343,6 +343,111 @@ function getVideoDuration(filePath: string): Promise<number> {
   });
 }
 
+export function getAudioDuration(audioUrl: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
+      ffmpeg.ffprobe(audioUrl, (err, metadata) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const duration = metadata.format.duration;
+        if (typeof duration === 'number' && duration > 0) {
+          resolve(duration);
+        } else {
+          reject(new Error(`Could not determine duration for ${audioUrl}`));
+        }
+      });
+    } else {
+      const localPath = audioUrl.startsWith('/') ? path.join(process.cwd(), audioUrl) : audioUrl;
+      ffmpeg.ffprobe(localPath, (err, metadata) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const duration = metadata.format.duration;
+        if (typeof duration === 'number' && duration > 0) {
+          resolve(duration);
+        } else {
+          reject(new Error(`Could not determine duration for ${localPath}`));
+        }
+      });
+    }
+  });
+}
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
+}
+
+export function recalculateMediaTimestamps<T extends MediaItem>(
+  mediaItems: T[],
+  actualAudioDuration: number
+): T[] {
+  if (mediaItems.length === 0) {
+    return mediaItems;
+  }
+
+  if (actualAudioDuration <= 0) {
+    console.warn('Invalid audio duration for timestamp recalculation:', actualAudioDuration);
+    return mediaItems;
+  }
+
+  const totalOriginalDuration = mediaItems.reduce((total, item) => {
+    const start = parseTime(item.startTime);
+    const end = parseTime(item.endTime);
+    return total + (end - start);
+  }, 0);
+
+  if (totalOriginalDuration === 0) {
+    const durationPerItem = actualAudioDuration / mediaItems.length;
+    return mediaItems.map((item, index) => {
+      const isLast = index === mediaItems.length - 1;
+      return {
+        ...item,
+        startTime: formatTime(index * durationPerItem),
+        endTime: isLast ? formatTime(actualAudioDuration) : formatTime((index + 1) * durationPerItem),
+      } as T;
+    });
+  }
+
+  const scaleFactor = actualAudioDuration / totalOriginalDuration;
+  const MINIMUM_DURATION = 0.1;
+  
+  let currentTime = 0;
+  const results: T[] = [];
+
+  for (let i = 0; i < mediaItems.length; i++) {
+    const item = mediaItems[i];
+    const isLast = i === mediaItems.length - 1;
+    
+    const originalStart = parseTime(item.startTime);
+    const originalEnd = parseTime(item.endTime);
+    const originalDuration = originalEnd - originalStart;
+    let newDuration = originalDuration * scaleFactor;
+    
+    newDuration = Math.max(MINIMUM_DURATION, newDuration);
+    
+    if (isLast) {
+      newDuration = actualAudioDuration - currentTime;
+      newDuration = Math.max(MINIMUM_DURATION, newDuration);
+    }
+
+    const newItem = {
+      ...item,
+      startTime: formatTime(currentTime),
+      endTime: isLast ? formatTime(actualAudioDuration) : formatTime(currentTime + newDuration),
+    } as T;
+
+    results.push(newItem);
+    currentTime += newDuration;
+  }
+
+  return results;
+}
+
 async function concatenateMedia(
   workDir: string,
   concatListPath: string,

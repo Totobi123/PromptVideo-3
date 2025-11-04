@@ -13,7 +13,7 @@ import { searchPexelsMedia } from "./services/pexels";
 import { generateAIImage } from "./services/cloudflare-ai";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
 import { searchBackgroundMusic } from "./services/freesound";
-import { renderVideo } from "./services/videoRenderer";
+import { renderVideo, getAudioDuration, recalculateMediaTimestamps } from "./services/videoRenderer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Generate video script with AI
@@ -66,9 +66,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         generateVoiceover(fullScriptText, voiceInfo.voiceId, validatedData.pace, voiceInfo.style),
       ]);
 
+      // Get actual audio duration and recalculate media timestamps to match
+      let finalMediaItems = mediaItemsWithUrls;
+      try {
+        const actualAudioDuration = await getAudioDuration(audioUrl);
+        console.log(`Actual voiceover duration: ${actualAudioDuration.toFixed(2)}s`);
+        console.log(`Requested video length: ${validatedData.length}s`);
+        
+        finalMediaItems = recalculateMediaTimestamps(mediaItemsWithUrls, actualAudioDuration);
+        console.log(`Recalculated ${finalMediaItems.length} media items to match audio duration`);
+      } catch (error) {
+        console.error("Failed to recalculate media timestamps:", error);
+        // Continue with original timestamps if recalculation fails
+      }
+
       res.json({
         segments: result.segments,
-        mediaItems: mediaItemsWithUrls,
+        mediaItems: finalMediaItems,
         voiceId: voiceInfo.voiceId,
         voiceName: voiceInfo.voiceName,
         audioUrl,
