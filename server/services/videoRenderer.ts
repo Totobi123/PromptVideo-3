@@ -449,15 +449,20 @@ function mixAudio(
       .input(musicPath)
       .complexFilter([
         {
-          filter: 'aloop',
-          options: { loop: -1, size: 2e+09 },
+          filter: 'apad',
           inputs: '0:a',
-          outputs: 'voiceloop'
+          outputs: 'voicepad'
+        },
+        {
+          filter: 'atrim',
+          options: `0:${targetDuration}`,
+          inputs: 'voicepad',
+          outputs: 'voicetrim'
         },
         {
           filter: 'volume',
           options: voiceVolume,
-          inputs: 'voiceloop',
+          inputs: 'voicetrim',
           outputs: 'voice'
         },
         {
@@ -476,12 +481,17 @@ function mixAudio(
           filter: 'amix',
           options: { inputs: 2, duration: 'longest', dropout_transition: 0 },
           inputs: ['voice', 'music'],
+          outputs: 'amixed'
+        },
+        {
+          filter: 'atrim',
+          options: `0:${targetDuration}`,
+          inputs: 'amixed',
           outputs: 'aout'
         }
       ], 'aout')
       .audioCodec('aac')
       .audioBitrate('192k')
-      .outputOptions(['-t', targetDuration.toString()])
       .output(outputPath)
       .on("start", (commandLine) => {
         console.log('FFmpeg audio mixing command:', commandLine);
@@ -510,15 +520,19 @@ function extendAudio(
       .input(inputPath)
       .complexFilter([
         {
-          filter: 'aloop',
-          options: { loop: -1, size: 2e+09 },
+          filter: 'apad',
           inputs: '0:a',
+          outputs: 'apadded'
+        },
+        {
+          filter: 'atrim',
+          options: `0:${targetDuration}`,
+          inputs: 'apadded',
           outputs: 'aout'
         }
       ], 'aout')
       .audioCodec('aac')
       .audioBitrate('192k')
-      .outputOptions(['-t', targetDuration.toString()])
       .output(outputPath)
       .on("start", (commandLine) => {
         console.log('FFmpeg audio extension command:', commandLine);
