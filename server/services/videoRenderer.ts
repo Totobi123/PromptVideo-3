@@ -231,24 +231,29 @@ export async function renderVideo(
     
     await storage.updateRenderJob(jobId, { progress: 60 });
 
+    const videoDuration = await getVideoDuration(videoNoAudioPath);
+    console.log(`[${jobId}] Video track duration: ${videoDuration.toFixed(2)}s`);
+
     const musicVolume = request.musicMixing?.backgroundMusicVolume ?? 0.2;
     const voiceVolume = request.musicMixing?.voiceoverVolume ?? 1.0;
 
     let audioPath: string;
     if (musicPath) {
       try {
-        console.log(`[${jobId}] Mixing voiceover and background music (voice: ${voiceVolume}, music: ${musicVolume})`);
+        console.log(`[${jobId}] Mixing voiceover and background music (voice: ${voiceVolume}, music: ${musicVolume}) to match video duration`);
         audioPath = path.join(tempDir, "mixed_audio.aac");
-        await mixAudio(voiceoverPath, musicPath, audioPath, voiceVolume, musicVolume);
+        await mixAudio(voiceoverPath, musicPath, audioPath, voiceVolume, musicVolume, videoDuration);
         await storage.updateRenderJob(jobId, { progress: 75 });
       } catch (error) {
         console.warn(`[${jobId}] Failed to mix audio, falling back to voiceover only:`, error);
-        audioPath = voiceoverPath;
+        audioPath = path.join(tempDir, "extended_voiceover.aac");
+        await extendAudio(voiceoverPath, audioPath, videoDuration);
         await storage.updateRenderJob(jobId, { progress: 75 });
       }
     } else {
-      console.log(`[${jobId}] Using voiceover only (no background music)`);
-      audioPath = voiceoverPath;
+      console.log(`[${jobId}] Extending voiceover to match video duration (no background music)`);
+      audioPath = path.join(tempDir, "extended_voiceover.aac");
+      await extendAudio(voiceoverPath, audioPath, videoDuration);
       await storage.updateRenderJob(jobId, { progress: 75 });
     }
 
@@ -435,7 +440,8 @@ function mixAudio(
   musicPath: string,
   outputPath: string,
   voiceVolume: number,
-  musicVolume: number
+  musicVolume: number,
+  targetDuration: number
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg()
@@ -443,9 +449,15 @@ function mixAudio(
       .input(musicPath)
       .complexFilter([
         {
+          filter: 'aloop',
+          options: { loop: -1, size: 2e+09 },
+          inputs: '0:a',
+          outputs: 'voiceloop'
+        },
+        {
           filter: 'volume',
           options: voiceVolume,
-          inputs: '0:a',
+          inputs: 'voiceloop',
           outputs: 'voice'
         },
         {
@@ -462,13 +474,14 @@ function mixAudio(
         },
         {
           filter: 'amix',
-          options: { inputs: 2, duration: 'first', dropout_transition: 0 },
+          options: { inputs: 2, duration: 'longest', dropout_transition: 0 },
           inputs: ['voice', 'music'],
           outputs: 'aout'
         }
       ], 'aout')
       .audioCodec('aac')
       .audioBitrate('192k')
+      .outputOptions(['-t', targetDuration.toString()])
       .output(outputPath)
       .on("start", (commandLine) => {
         console.log('FFmpeg audio mixing command:', commandLine);
@@ -483,6 +496,35 @@ function mixAudio(
         console.error('FFmpeg stderr:', stderr);
         reject(new Error(`Failed to mix audio: ${err.message}`));
       })
+      .run();
+  });
+}
+
+function extendAudio(
+  inputPath: string,
+  outputPath: string,
+  targetDuration: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(inputPath)
+      .complexFilter([
+        {
+          filter: 'aloop',
+          options: { loop: -1, size: 2e+09 },
+          inputs: '0:a',
+          outputs: 'aout'
+        }
+      ], 'aout')
+      .audioCodec('aac')
+      .audioBitrate('192k')
+      .outputOptions(['-t', targetDuration.toString()])
+      .output(outputPath)
+      .on("start", (commandLine) => {
+        console.log('FFmpeg audio extension command:', commandLine);
+      })
+      .on("end", () => resolve())
+      .on("error", (err) => reject(new Error(`Failed to extend audio: ${err.message}`)))
       .run();
   });
 }
@@ -502,8 +544,7 @@ function combineVideoAndAudio(
         "-map", "1:a:0",
         "-c:v", "copy",
         "-c:a", "aac",
-        "-b:a", "128k",
-        "-shortest"
+        "-b:a", "128k"
       ])
       .output(outputPath)
       .on("progress", async (progress) => {
