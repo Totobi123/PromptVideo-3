@@ -154,6 +154,9 @@ export async function renderVideo(
     console.log(`[${jobId}] Downloading voiceover from ${request.audioUrl}`);
     await downloadFile(request.audioUrl, voiceoverPath);
 
+    const voiceoverDuration = await getAudioDuration(voiceoverPath);
+    console.log(`[${jobId}] Voiceover duration: ${voiceoverDuration.toFixed(2)}s - this is our target video duration`);
+
     let musicPath: string | undefined;
     if (request.musicUrl) {
       musicPath = path.join(tempDir, "music.mp3");
@@ -163,10 +166,25 @@ export async function renderVideo(
 
     await storage.updateRenderJob(jobId, { progress: 15 });
 
+    const FADE_DURATION = 0.5;
     const mediaFiles: DownloadedFile[] = [];
     const normalizedFiles: string[] = [];
     
     console.log(`[${jobId}] Processing ${request.mediaItems.length} media items`);
+    
+    const totalTransitionTime = (request.mediaItems.length - 1) * FADE_DURATION;
+    const calculatedTotalDuration = request.mediaItems.reduce((sum, item) => {
+      const start = parseTime(item.startTime);
+      const end = parseTime(item.endTime);
+      return sum + (end - start);
+    }, 0);
+    
+    const durationAdjustmentFactor = calculatedTotalDuration > 0 
+      ? (voiceoverDuration + totalTransitionTime) / calculatedTotalDuration 
+      : 1;
+    
+    console.log(`[${jobId}] Adjusting media durations by factor ${durationAdjustmentFactor.toFixed(3)} to compensate for ${totalTransitionTime}s of transitions`);
+    
     for (let i = 0; i < request.mediaItems.length; i++) {
       const item = request.mediaItems[i];
       if (!item.url) {
@@ -191,9 +209,10 @@ export async function renderVideo(
         duration = 3;
       }
       
+      duration = duration * durationAdjustmentFactor;
       duration = Math.max(duration, 0.5);
       
-      console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration}s duration`);
+      console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration.toFixed(2)}s duration (adjusted for transitions)`);
       await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration);
       
       mediaFiles.push({ path: normalizedFilePath, duration });
@@ -231,8 +250,13 @@ export async function renderVideo(
     
     await storage.updateRenderJob(jobId, { progress: 60 });
 
-    const videoDuration = await getVideoDuration(videoNoAudioPath);
-    console.log(`[${jobId}] Video track duration: ${videoDuration.toFixed(2)}s`);
+    const actualVideoDuration = await getVideoDuration(videoNoAudioPath);
+    console.log(`[${jobId}] Video track duration: ${actualVideoDuration.toFixed(2)}s (target was ${voiceoverDuration.toFixed(2)}s)`);
+    
+    const durationDifference = Math.abs(actualVideoDuration - voiceoverDuration);
+    if (durationDifference > 1.0) {
+      console.warn(`[${jobId}] WARNING: Video duration differs from voiceover by ${durationDifference.toFixed(2)}s`);
+    }
 
     const musicVolume = request.musicMixing?.backgroundMusicVolume ?? 0.2;
     const voiceVolume = request.musicMixing?.voiceoverVolume ?? 1.0;
@@ -240,20 +264,18 @@ export async function renderVideo(
     let audioPath: string;
     if (musicPath) {
       try {
-        console.log(`[${jobId}] Mixing voiceover and background music (voice: ${voiceVolume}, music: ${musicVolume}) to match video duration`);
+        console.log(`[${jobId}] Mixing voiceover and background music (voice: ${voiceVolume}, music: ${musicVolume}) to match voiceover duration`);
         audioPath = path.join(tempDir, "mixed_audio.aac");
-        await mixAudio(voiceoverPath, musicPath, audioPath, voiceVolume, musicVolume, videoDuration);
+        await mixAudio(voiceoverPath, musicPath, audioPath, voiceVolume, musicVolume, voiceoverDuration);
         await storage.updateRenderJob(jobId, { progress: 75 });
       } catch (error) {
         console.warn(`[${jobId}] Failed to mix audio, falling back to voiceover only:`, error);
-        audioPath = path.join(tempDir, "extended_voiceover.aac");
-        await extendAudio(voiceoverPath, audioPath, videoDuration);
+        audioPath = voiceoverPath;
         await storage.updateRenderJob(jobId, { progress: 75 });
       }
     } else {
-      console.log(`[${jobId}] Extending voiceover to match video duration (no background music)`);
-      audioPath = path.join(tempDir, "extended_voiceover.aac");
-      await extendAudio(voiceoverPath, audioPath, videoDuration);
+      console.log(`[${jobId}] Using voiceover as-is (no background music)`);
+      audioPath = voiceoverPath;
       await storage.updateRenderJob(jobId, { progress: 75 });
     }
 
