@@ -140,6 +140,7 @@ export async function renderVideo(
   const outputDir = path.join(process.cwd(), "output");
   
   const aspectRatio = request.aspectRatio || "16:9";
+  const fitMode = request.fitMode || "fit";
   const dimensions = aspectRatio === "16:9" 
     ? { width: 1920, height: 1080 } 
     : { width: 1080, height: 1920 };
@@ -152,7 +153,7 @@ export async function renderVideo(
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    console.log(`[${jobId}] Starting video render process with ${aspectRatio} aspect ratio (${dimensions.width}x${dimensions.height})`);
+    console.log(`[${jobId}] Starting video render process with ${aspectRatio} aspect ratio (${dimensions.width}x${dimensions.height}), ${fitMode} mode`);
     await storage.updateRenderJob(jobId, { status: "processing", progress: 5 });
 
     const voiceoverPath = path.join(tempDir, "voiceover.mp3");
@@ -218,7 +219,7 @@ export async function renderVideo(
       duration = Math.max(duration, 0.5);
       
       console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration.toFixed(2)}s duration (adjusted for transitions)`);
-      await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration, dimensions.width, dimensions.height);
+      await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration, dimensions.width, dimensions.height, fitMode);
       
       mediaFiles.push({ path: normalizedFilePath, duration });
       normalizedFiles.push(normalizedFilePath);
@@ -318,15 +319,20 @@ function normalizeMediaFile(
   type: "image" | "video",
   duration: number,
   width: number = 1920,
-  height: number = 1080
+  height: number = 1080,
+  fitMode: "fit" | "crop" = "fit"
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const command = ffmpeg(inputPath);
     
+    const videoFilter = fitMode === "crop"
+      ? `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`
+      : `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
+    
     if (type === "image") {
       command
         .inputOptions(["-loop", "1", "-t", duration.toString(), "-framerate", "30"])
-        .videoFilters(`scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`)
+        .videoFilters(videoFilter)
         .outputOptions([
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
@@ -339,7 +345,7 @@ function normalizeMediaFile(
     } else {
       command
         .inputOptions(["-t", duration.toString()])
-        .videoFilters(`scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30`)
+        .videoFilters(`${videoFilter},fps=30`)
         .outputOptions([
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
