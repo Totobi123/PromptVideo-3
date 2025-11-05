@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church, Image, Wand2, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church, Image, Wand2, RectangleHorizontal, RectangleVertical, Maximize2, Minimize2 } from "lucide-react";
 
 interface SelectionOption {
   value: string;
@@ -8,7 +8,7 @@ interface SelectionOption {
 }
 
 interface SelectionBoxesProps {
-  type: "mood" | "pace" | "length" | "audience" | "category" | "mediaSource" | "aspectRatio";
+  type: "mood" | "pace" | "length" | "audience" | "category" | "mediaSource" | "aspectRatio" | "fitMode";
   selected: string;
   onSelect: (value: string) => void;
 }
@@ -68,6 +68,11 @@ const aspectRatioOptions: SelectionOption[] = [
   { value: "9:16", label: "9:16 (Portrait)", icon: <RectangleVertical className="w-5 h-5" /> },
 ];
 
+const fitModeOptions: SelectionOption[] = [
+  { value: "fit", label: "Fit (Add Padding)", icon: <Minimize2 className="w-5 h-5" /> },
+  { value: "crop", label: "Crop (Zoom to Fill)", icon: <Maximize2 className="w-5 h-5" /> },
+];
+
 export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps) {
   const options = 
     type === "mood" ? moodOptions :
@@ -76,6 +81,7 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
     type === "audience" ? audienceOptions :
     type === "mediaSource" ? mediaSourceOptions :
     type === "aspectRatio" ? aspectRatioOptions :
+    type === "fitMode" ? fitModeOptions :
     categoryOptions;
   
   const title = 
@@ -85,6 +91,7 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
     type === "audience" ? "Target Audience" :
     type === "mediaSource" ? "Media Source" :
     type === "aspectRatio" ? "Aspect Ratio" :
+    type === "fitMode" ? "Scaling Mode" :
     "Video Category";
 
   return (
