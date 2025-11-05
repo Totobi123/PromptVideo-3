@@ -172,13 +172,13 @@ export async function renderVideo(
 
     await storage.updateRenderJob(jobId, { progress: 15 });
 
-    const FADE_DURATION = 0.5;
+    const TRANSITION_DURATION = 0.8;
     const mediaFiles: DownloadedFile[] = [];
     const normalizedFiles: string[] = [];
     
     console.log(`[${jobId}] Processing ${request.mediaItems.length} media items`);
     
-    const totalTransitionTime = (request.mediaItems.length - 1) * FADE_DURATION;
+    const totalTransitionTime = (request.mediaItems.length - 1) * TRANSITION_DURATION;
     const calculatedTotalDuration = request.mediaItems.reduce((sum, item) => {
       const start = parseTime(item.startTime);
       const end = parseTime(item.endTime);
@@ -233,27 +233,24 @@ export async function renderVideo(
       throw new Error("No media files to render");
     }
 
-    console.log(`[${jobId}] Creating concat input list for ${mediaFiles.length} media files`);
+    console.log(`[${jobId}] Creating video with transitions for ${mediaFiles.length} media files`);
     await storage.updateRenderJob(jobId, { progress: 40 });
 
-    const concatListPath = path.join(tempDir, "input_list.txt");
-    const concatListLines: string[] = [];
-    
-    for (let i = 0; i < mediaFiles.length; i++) {
-      concatListLines.push(`file '${mediaFiles[i].path}'`);
-      if (i < mediaFiles.length - 1) {
-        concatListLines.push(`duration ${mediaFiles[i].duration}`);
-      }
-    }
-    
-    const concatListContent = concatListLines.join("\n");
-    fs.writeFileSync(concatListPath, concatListContent);
-    
-    console.log(`[${jobId}] Concat list:\n${concatListContent}`);
-
     const videoNoAudioPath = path.join(tempDir, "video_no_audio.mp4");
-    console.log(`[${jobId}] Concatenating media files into single video track`);
-    await concatenateMedia(tempDir, concatListPath, videoNoAudioPath);
+    
+    if (mediaFiles.length === 1) {
+      console.log(`[${jobId}] Single media file, no transitions needed`);
+      fs.copyFileSync(mediaFiles[0].path, videoNoAudioPath);
+    } else {
+      console.log(`[${jobId}] Applying transitions between ${mediaFiles.length} media files`);
+      await concatenateMediaWithTransitions(
+        tempDir, 
+        mediaFiles, 
+        request.mediaItems.slice(0, mediaFiles.length),
+        videoNoAudioPath,
+        jobId
+      );
+    }
     
     await storage.updateRenderJob(jobId, { progress: 60 });
 
@@ -348,6 +345,42 @@ function getKeyframeFilter(
     
     case "kenburns":
       return `,zoompan=z='min(zoom+0.001,1.3)':x='if(gte(zoom,1.15),iw-iw/zoom-((iw-iw/zoom)/${totalFrames})*on,iw/2-(iw/zoom/2))':y='if(gte(zoom,1.15),0,ih/2-(ih/zoom/2))':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "zoominslow":
+      return `,zoompan=z='min(zoom+0.0008,1.3)':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${fps}`;
+    
+    case "zoomoutslow":
+      return `,zoompan=z='if(lte(zoom,1.0),1.3,max(1.001,zoom-0.0008))':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${fps}`;
+    
+    case "zoominfast":
+      return `,zoompan=z='min(zoom+0.0025,1.8)':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${fps}`;
+    
+    case "zoomoutfast":
+      return `,zoompan=z='if(lte(zoom,1.0),1.8,max(1.001,zoom-0.0025))':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${fps}`;
+    
+    case "panleftup":
+      return `,zoompan=z='1.3':x='iw-iw/zoom-((iw-iw/zoom)/${totalFrames})*on':y='ih-ih/zoom-((ih-ih/zoom)/${totalFrames})*on':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "panrightup":
+      return `,zoompan=z='1.3':x='((iw-iw/zoom)/${totalFrames})*on':y='ih-ih/zoom-((ih-ih/zoom)/${totalFrames})*on':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "panleftdown":
+      return `,zoompan=z='1.3':x='iw-iw/zoom-((iw-iw/zoom)/${totalFrames})*on':y='((ih-ih/zoom)/${totalFrames})*on':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "panrightdown":
+      return `,zoompan=z='1.3':x='((iw-iw/zoom)/${totalFrames})*on':y='((ih-ih/zoom)/${totalFrames})*on':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "rotate":
+      return `,zoompan=z='1.5':x='iw/2-(iw/zoom/2)+sin(on/${totalFrames}*2*PI)*iw/10':y='ih/2-(ih/zoom/2)+cos(on/${totalFrames}*2*PI)*ih/10':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "spiral":
+      return `,zoompan=z='min(1.0+on/${totalFrames}*0.5,1.5)':x='iw/2-(iw/zoom/2)+sin(on/${totalFrames}*4*PI)*iw/15':y='ih/2-(ih/zoom/2)+cos(on/${totalFrames}*4*PI)*ih/15':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "shake":
+      return `,zoompan=z='1.1':x='iw/2-(iw/zoom/2)+sin(on*0.5)*20':y='ih/2-(ih/zoom/2)+cos(on*0.7)*15':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "drift":
+      return `,zoompan=z='1.2':x='iw/2-(iw/zoom/2)+sin(on/${totalFrames}*PI)*iw/20':y='ih/2-(ih/zoom/2)+cos(on/${totalFrames}*PI*0.7)*ih/25':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
     
     default:
       return "";
@@ -535,43 +568,137 @@ export function recalculateMediaTimestamps<T extends MediaItem>(
   return results;
 }
 
-async function concatenateMedia(
+function getTransitionFilter(transitionType: string | undefined): string {
+  if (!transitionType || transitionType === "fade") {
+    return "fade";
+  }
+  
+  switch (transitionType) {
+    case "fadeblack": return "fadeblack";
+    case "fadewhite": return "fadewhite";
+    case "distance": return "distance";
+    case "wipeleft": return "wipeleft";
+    case "wiperight": return "wiperight";
+    case "wipeup": return "wipeup";
+    case "wipedown": return "wipedown";
+    case "slideleft": return "slideleft";
+    case "slideright": return "slideright";
+    case "slideup": return "slideup";
+    case "slidedown": return "slidedown";
+    case "circlecrop": return "circlecrop";
+    case "rectcrop": return "rectcrop";
+    case "circleopen": return "circleopen";
+    case "circleclose": return "circleclose";
+    case "dissolve": return "dissolve";
+    default: return "fade";
+  }
+}
+
+async function concatenateMediaWithTransitions(
   workDir: string,
-  concatListPath: string,
-  outputPath: string
+  mediaFiles: DownloadedFile[],
+  mediaItems: MediaItem[],
+  outputPath: string,
+  jobId: string
 ): Promise<void> {
+  const TRANSITION_DURATION = 0.8;
+  
   return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(concatListPath)
-      .inputOptions(['-f', 'concat', '-safe', '0'])
-      .outputOptions([
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
-        "-preset", "medium",
-        "-crf", "23",
-        "-g", "60",
-        "-keyint_min", "60",
-        "-an"
-      ])
-      .output(outputPath)
-      .on("start", (commandLine) => {
-        console.log(`[Concat] FFmpeg command: ${commandLine}`);
-      })
-      .on("progress", (progress) => {
-        if (progress.percent) {
-          console.log(`[Concat] Progress: ${progress.percent.toFixed(1)}%`);
+    const command = ffmpeg();
+    
+    for (let i = 0; i < mediaFiles.length; i++) {
+      command.input(mediaFiles[i].path);
+    }
+    
+    if (mediaFiles.length === 2) {
+      const transition = getTransitionFilter(mediaItems[1]?.transition);
+      const offset = mediaFiles[0].duration - TRANSITION_DURATION;
+      
+      const filterComplex = `[0:v][1:v]xfade=transition=${transition}:duration=${TRANSITION_DURATION}:offset=${offset}[outv]`;
+      
+      command
+        .complexFilter(filterComplex, 'outv')
+        .outputOptions([
+          "-c:v", "libx264",
+          "-pix_fmt", "yuv420p",
+          "-preset", "medium",
+          "-crf", "23",
+          "-g", "60",
+          "-keyint_min", "60",
+          "-an"
+        ])
+        .output(outputPath)
+        .on("start", (commandLine) => {
+          console.log(`[${jobId}] FFmpeg xfade command: ${commandLine}`);
+        })
+        .on("progress", (progress) => {
+          if (progress.percent) {
+            console.log(`[${jobId}] Transition progress: ${progress.percent.toFixed(1)}%`);
+          }
+        })
+        .on("end", () => {
+          console.log(`[${jobId}] Successfully applied transitions`);
+          resolve();
+        })
+        .on("error", (err, stdout, stderr) => {
+          console.error(`[${jobId}] FFmpeg transition error:`, err.message);
+          console.error(`[${jobId}] stderr:`, stderr);
+          reject(new Error(`Failed to apply transitions: ${err.message}`));
+        })
+        .run();
+    } else {
+      const filterParts: string[] = [];
+      let currentOffset = 0;
+      
+      for (let i = 0; i < mediaFiles.length - 1; i++) {
+        const transition = getTransitionFilter(mediaItems[i + 1]?.transition);
+        const offset = currentOffset + mediaFiles[i].duration - TRANSITION_DURATION;
+        
+        if (i === 0) {
+          filterParts.push(`[0:v][1:v]xfade=transition=${transition}:duration=${TRANSITION_DURATION}:offset=${offset}[v01]`);
+        } else {
+          const prevLabel = i === 1 ? 'v01' : `v0${i}`;
+          const nextLabel = `v0${i + 1}`;
+          filterParts.push(`[${prevLabel}][${i + 1}:v]xfade=transition=${transition}:duration=${TRANSITION_DURATION}:offset=${offset}[${nextLabel}]`);
         }
-      })
-      .on("end", () => {
-        console.log(`[Concat] Successfully concatenated media files`);
-        resolve();
-      })
-      .on("error", (err, stdout, stderr) => {
-        console.error(`[Concat] FFmpeg error:`, err.message);
-        console.error(`[Concat] stderr:`, stderr);
-        reject(new Error(`Failed to concatenate media: ${err.message}`));
-      })
-      .run();
+        
+        currentOffset = offset;
+      }
+      
+      const lastLabel = mediaFiles.length === 2 ? 'v01' : `v0${mediaFiles.length - 1}`;
+      const filterComplex = filterParts.join(';');
+      
+      command
+        .complexFilter(filterComplex, lastLabel)
+        .outputOptions([
+          "-c:v", "libx264",
+          "-pix_fmt", "yuv420p",
+          "-preset", "medium",
+          "-crf", "23",
+          "-g", "60",
+          "-keyint_min", "60",
+          "-an"
+        ])
+        .output(outputPath)
+        .on("start", (commandLine) => {
+          console.log(`[${jobId}] FFmpeg xfade command: ${commandLine}`);
+        })
+        .on("progress", (progress) => {
+          if (progress.percent) {
+            console.log(`[${jobId}] Transition progress: ${progress.percent.toFixed(1)}%`);
+          }
+        })
+        .on("end", () => {
+          console.log(`[${jobId}] Successfully applied transitions`);
+          resolve();
+        })
+        .on("error", (err, stdout, stderr) => {
+          console.error(`[${jobId}] FFmpeg transition error:`, err.message);
+          console.error(`[${jobId}] stderr:`, stderr);
+          reject(new Error(`Failed to apply transitions: ${err.message}`));
+        })
+        .run();
+    }
   });
 }
 

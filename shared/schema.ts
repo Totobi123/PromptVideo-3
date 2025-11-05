@@ -78,7 +78,19 @@ export const mediaItemSchema = z.object({
     "panright",
     "panup",
     "pandown",
-    "kenburns"
+    "kenburns",
+    "zoominslow",
+    "zoomoutslow",
+    "zoominfast",
+    "zoomoutfast",
+    "panleftup",
+    "panrightup",
+    "panleftdown",
+    "panrightdown",
+    "rotate",
+    "spiral",
+    "shake",
+    "drift"
   ]).default("none").optional(),
 });
 
