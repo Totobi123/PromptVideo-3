@@ -14,7 +14,9 @@ import { ProductionInfo } from "@/components/ProductionInfo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, RefreshCw, AlertCircle, Video, Download } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Step = "prompt" | "details" | "generating" | "results";
@@ -42,8 +44,31 @@ const stepVariants = {
 };
 
 const stepTransition = {
-  duration: 0.4,
-  ease: "easeInOut",
+  duration: 0.5,
+  ease: [0.22, 1, 0.36, 1],
+};
+
+const resultsContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const resultsCardVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
 };
 
 export default function Dashboard() {
@@ -488,6 +513,95 @@ export default function Dashboard() {
     }
   }, [isGenerating, progress]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        isGenerating ||
+        isRendering
+      ) {
+        return;
+      }
+
+      const isMod = e.metaKey || e.ctrlKey;
+
+      // Global shortcuts
+      if (currentStep === "prompt") {
+        // Enter to continue
+        if (e.key === "Enter" && !isMod && prompt.trim()) {
+          e.preventDefault();
+          handleContinueToDetails();
+        }
+      }
+
+      if (currentStep === "details") {
+        // Escape to go back
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setCurrentStep("prompt");
+        }
+        
+        // Ctrl/Cmd + Enter to generate
+        if (e.key === "Enter" && isMod && mood && pace && length && audience && category) {
+          e.preventDefault();
+          handleGenerate();
+        }
+
+        // Ctrl/Cmd + A to autofill
+        if (e.key === "a" && isMod && !isAutoFilling) {
+          e.preventDefault();
+          handleAutoFill();
+        }
+      }
+
+      if (currentStep === "results") {
+        // Escape to start over
+        if (e.key === "Escape" && e.shiftKey) {
+          e.preventDefault();
+          handleStartOver();
+        }
+
+        // Ctrl/Cmd + E to export script
+        if (e.key === "e" && isMod && scriptSegments.length > 0) {
+          e.preventDefault();
+          handleExportScript();
+        }
+
+        // Ctrl/Cmd + M to make video
+        if (e.key === "m" && isMod && audioUrl && !isRendering) {
+          e.preventDefault();
+          handleMakeVideo();
+        }
+
+        // Ctrl/Cmd + D to download video
+        if (e.key === "d" && isMod && videoUrl) {
+          e.preventDefault();
+          handleDownloadVideo();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    currentStep, 
+    prompt, 
+    mood, 
+    pace, 
+    length, 
+    audience, 
+    category, 
+    isGenerating,
+    isAutoFilling,
+    isRendering,
+    scriptSegments,
+    audioUrl,
+    videoUrl
+  ]);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -517,16 +631,22 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <PromptInput value={prompt} onChange={setPrompt} />
-                  <Button
-                    data-testid="button-continue-to-details"
-                    onClick={handleContinueToDetails}
-                    disabled={!prompt.trim()}
-                    size="lg"
-                    className="w-full gap-2"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    Continue to Details
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      data-testid="button-continue-to-details"
+                      onClick={handleContinueToDetails}
+                      disabled={!prompt.trim()}
+                      size="lg"
+                      className="w-full gap-2"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Continue to Details
+                    </Button>
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Keyboard className="w-3 h-3" />
+                      <span>Press <Badge variant="outline" className="px-1 py-0 text-xs">Enter</Badge> to continue</span>
+                    </div>
+                  </div>
                 </div>
               </Card>
             </motion.div>
@@ -550,16 +670,23 @@ export default function Dashboard() {
                     <p className="text-muted-foreground">
                       Select the mood, pace, and length for your video
                     </p>
-                    <Button
-                      data-testid="button-autofill-details"
-                      onClick={handleAutoFill}
-                      disabled={isAutoFilling}
-                      variant="default"
-                      className="gap-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      {isAutoFilling ? "Auto-filling..." : "Auto-fill with AI"}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          data-testid="button-autofill-details"
+                          onClick={handleAutoFill}
+                          disabled={isAutoFilling}
+                          variant="default"
+                          className="gap-2"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {isAutoFilling ? "Auto-filling..." : "Auto-fill with AI"}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ctrl/Cmd + A</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   <SelectionBoxes type="audience" selected={audience} onSelect={setAudience} />
                   <SelectionBoxes type="category" selected={category} onSelect={setCategory} />
@@ -567,25 +694,48 @@ export default function Dashboard() {
                   <SelectionBoxes type="mood" selected={mood} onSelect={setMood} />
                   <SelectionBoxes type="pace" selected={pace} onSelect={setPace} />
                   <SelectionBoxes type="length" selected={length} onSelect={setLength} />
-                  <div className="flex gap-3 justify-center">
-                    <Button
-                      data-testid="button-back-to-prompt"
-                      onClick={() => setCurrentStep("prompt")}
-                      variant="outline"
-                      size="lg"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      data-testid="button-generate-script"
-                      onClick={handleGenerate}
-                      disabled={!mood || !pace || !length || !audience || !category}
-                      size="lg"
-                      className="gap-2"
-                    >
-                      <Sparkles className="w-5 h-5" />
-                      Generate Script
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="flex gap-3 justify-center">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            data-testid="button-back-to-prompt"
+                            onClick={() => setCurrentStep("prompt")}
+                            variant="outline"
+                            size="lg"
+                          >
+                            Back
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Esc</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            data-testid="button-generate-script"
+                            onClick={handleGenerate}
+                            disabled={!mood || !pace || !length || !audience || !category}
+                            size="lg"
+                            className="gap-2"
+                          >
+                            <Sparkles className="w-5 h-5" />
+                            Generate Script
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ctrl/Cmd + Enter</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Keyboard className="w-3 h-3" />
+                      <span>
+                        <Badge variant="outline" className="px-1 py-0 text-xs">Esc</Badge> to go back • 
+                        <Badge variant="outline" className="px-1 py-0 text-xs mx-1">Ctrl/Cmd+Enter</Badge> to generate
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -619,8 +769,16 @@ export default function Dashboard() {
               variants={stepVariants}
               transition={stepTransition}
             >
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
+              <motion.div
+                variants={resultsContainerVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6"
+              >
+                <motion.div
+                  variants={resultsCardVariants}
+                  className="flex items-center justify-between"
+                >
                   <h2 className="text-2xl font-serif font-bold text-foreground">
                     Your Video Script is Ready!
                   </h2>
@@ -633,46 +791,58 @@ export default function Dashboard() {
                     <RefreshCw className="w-4 h-4" />
                     Start Over
                   </Button>
-                </div>
+                </motion.div>
                 
                 {scriptSegments.length === 0 && (
-                  <Card className="p-6">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <AlertCircle className="w-5 h-5" />
-                      <p>No script segments generated. Please try again.</p>
-                    </div>
-                  </Card>
+                  <motion.div variants={resultsCardVariants}>
+                    <Card className="p-6">
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <AlertCircle className="w-5 h-5" />
+                        <p>No script segments generated. Please try again.</p>
+                      </div>
+                    </Card>
+                  </motion.div>
                 )}
                 
-                <div className="grid lg:grid-cols-2 gap-6">
+                <motion.div
+                  variants={resultsCardVariants}
+                  className="grid lg:grid-cols-2 gap-6"
+                >
                   <ScriptTimeline segments={scriptSegments} />
                   <MediaRecommendations items={mediaItems} />
-                </div>
+                </motion.div>
                 
-                <VoiceAndMusicInfo
-                  voiceName={voiceName}
-                  audioUrl={audioUrl}
-                  musicTitle={musicTitle}
-                  musicUrl={musicUrl}
-                  musicCreator={musicCreator}
-                  musicLicense={musicLicense}
-                  onDownloadVoiceover={handleDownloadVoiceover}
-                  onDownloadMusic={handleDownloadMusic}
-                />
+                <motion.div variants={resultsCardVariants}>
+                  <VoiceAndMusicInfo
+                    voiceName={voiceName}
+                    audioUrl={audioUrl}
+                    musicTitle={musicTitle}
+                    musicUrl={musicUrl}
+                    musicCreator={musicCreator}
+                    musicLicense={musicLicense}
+                    onDownloadVoiceover={handleDownloadVoiceover}
+                    onDownloadMusic={handleDownloadMusic}
+                  />
+                </motion.div>
 
                 {seoPackage && (
-                  <SEOPackage seoPackage={seoPackage} />
+                  <motion.div variants={resultsCardVariants}>
+                    <SEOPackage seoPackage={seoPackage} />
+                  </motion.div>
                 )}
 
                 {(chapters.length > 0 || ctaPlacements.length > 0 || musicMixing) && (
-                  <ProductionInfo
-                    chapters={chapters}
-                    ctaPlacements={ctaPlacements}
-                    musicMixing={musicMixing || undefined}
-                  />
+                  <motion.div variants={resultsCardVariants}>
+                    <ProductionInfo
+                      chapters={chapters}
+                      ctaPlacements={ctaPlacements}
+                      musicMixing={musicMixing || undefined}
+                    />
+                  </motion.div>
                 )}
 
-                <Card className="p-6">
+                <motion.div variants={resultsCardVariants}>
+                  <Card className="p-6">
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-foreground">
                       Export Your Content
@@ -684,8 +854,10 @@ export default function Dashboard() {
                     />
                   </div>
                 </Card>
+                </motion.div>
 
-                <Card className="p-6">
+                <motion.div variants={resultsCardVariants}>
+                  <Card className="p-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">
@@ -745,7 +917,8 @@ export default function Dashboard() {
                     </Button>
                   </div>
                 </Card>
-              </div>
+                </motion.div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

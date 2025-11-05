@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church, Image, Wand2, RectangleHorizontal, RectangleVertical, Maximize2, Minimize2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface SelectionOption {
   value: string;
@@ -101,16 +102,21 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
         {options.map((option) => {
           const isSelected = selected === option.value;
           return (
-            <Card
+            <motion.div
               key={option.value}
-              data-testid={`button-select-${type}-${option.value}`}
-              onClick={() => onSelect(option.value)}
-              className={`p-6 cursor-pointer transition-all hover-elevate active-elevate-2 ${
-                isSelected
-                  ? "border-2 border-primary shadow-lg shadow-primary/20"
-                  : "border-border"
-              }`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             >
+              <Card
+                data-testid={`button-select-${type}-${option.value}`}
+                onClick={() => onSelect(option.value)}
+                className={`p-6 cursor-pointer transition-all hover-elevate active-elevate-2 ${
+                  isSelected
+                    ? "border-2 border-primary shadow-lg shadow-primary/20"
+                    : "border-border"
+                }`}
+              >
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className={`${isSelected ? "text-primary" : "text-muted-foreground"}`}>
                   {option.icon}
@@ -120,6 +126,7 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
                 </span>
               </div>
             </Card>
+            </motion.div>
           );
         })}
       </div>

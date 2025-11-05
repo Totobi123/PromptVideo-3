@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Zap, PauseCircle, Smile } from "lucide-react";
+import { motion } from "framer-motion";
 
 export interface ScriptSegment {
   startTime: string;
@@ -24,17 +25,50 @@ const emotionIcons = {
   urgent: <Zap className="w-3 h-3" />,
 };
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut",
+    },
+  },
+};
+
 export function ScriptTimeline({ segments }: ScriptTimelineProps) {
   return (
     <Card className="p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-4">
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center gap-2 mb-4"
+      >
         <Clock className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">Video Script</h3>
-      </div>
-      <div className="space-y-4">
+      </motion.div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-4"
+      >
         {segments.map((segment, index) => (
-          <div
+          <motion.div
             key={index}
+            variants={itemVariants}
             data-testid={`script-segment-${index}`}
             className="flex gap-4 p-4 rounded-lg bg-muted/50 hover-elevate"
           >
@@ -66,9 +100,9 @@ export function ScriptTimeline({ segments }: ScriptTimelineProps) {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </Card>
   );
 }

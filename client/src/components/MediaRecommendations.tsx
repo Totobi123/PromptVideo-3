@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Image, Video, Star, Scissors } from "lucide-react";
+import { motion } from "framer-motion";
 
 export interface MediaItem {
   type: "image" | "video";
@@ -17,21 +18,56 @@ interface MediaRecommendationsProps {
   items: MediaItem[];
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut",
+    },
+  },
+};
+
 export function MediaRecommendations({ items }: MediaRecommendationsProps) {
   return (
     <Card className="p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-4">
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center gap-2 mb-4"
+      >
         <Image className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">Stock Media</h3>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      </motion.div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+      >
         {items.map((item, index) => (
-          <Card
+          <motion.div
             key={index}
-            data-testid={`media-item-${index}`}
-            className="overflow-hidden hover-elevate cursor-pointer"
-            onClick={() => item.url && window.open(item.url, "_blank")}
+            variants={itemVariants}
           >
+            <Card
+              data-testid={`media-item-${index}`}
+              className="overflow-hidden hover-elevate cursor-pointer h-full"
+              onClick={() => item.url && window.open(item.url, "_blank")}
+            >
             <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
               {item.thumbnail ? (
                 <img 
@@ -79,8 +115,9 @@ export function MediaRecommendations({ items }: MediaRecommendationsProps) {
               </p>
             </div>
           </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </Card>
   );
 }
