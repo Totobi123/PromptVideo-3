@@ -166,6 +166,7 @@ export const renderVideoRequestSchema = z.object({
   audioUrl: z.string().url(),
   musicUrl: z.string().url().optional(),
   aspectRatio: z.enum(["16:9", "9:16"]).default("16:9"),
+  fitMode: z.enum(["fit", "crop"]).default("fit"),
   musicMixing: z.object({
     backgroundMusicVolume: z.number().min(0).max(1).default(0.3),
     voiceoverVolume: z.number().min(0).max(1).default(1.0),
