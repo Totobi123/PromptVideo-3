@@ -569,7 +569,7 @@ export function recalculateMediaTimestamps<T extends MediaItem>(
 }
 
 function getTransitionFilter(transitionType: string | undefined): string {
-  if (!transitionType || transitionType === "fade") {
+  if (!transitionType || transitionType === "fade" || transitionType === "cut") {
     return "fade";
   }
   

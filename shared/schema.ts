@@ -53,6 +53,7 @@ export const mediaItemSchema = z.object({
   suggestedMediaSource: z.enum(["stock", "ai"]).optional(),
   transition: z.enum([
     "fade", 
+    "cut",
     "fadeblack", 
     "fadewhite", 
     "distance", 
