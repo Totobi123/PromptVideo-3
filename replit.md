@@ -34,7 +34,8 @@ Preferred communication style: Simple, everyday language.
 **Type Safety**: Extensive TypeScript usage with Zod schemas for validation.
 **Category-Driven Content**: 11 video categories (Tech, Cooking, Travel, Education, Gaming, Fitness, Vlog, Review, Tutorial, Entertainment, Gospel) with specific guidelines for script structure, tone, media preferences, CTA styles, and keywords, ensuring tailored output for each category.
 **Smart Media Source Selection**: Automatically chooses between AI generation and stock media based on scene analysis, with options for "Stock Images/Videos", "AI Generated Images", or "Auto-Select (Smart)".
-**Video Rendering System**: Uses FFmpeg's concat demuxer for reliable video concatenation, ensuring video duration synchronization with voiceover, and proper handling of video clips versus images.
+**Aspect Ratio Selection**: Users can select between 16:9 (landscape, 1920x1080) for YouTube/desktop or 9:16 (portrait, 1080x1920) for Instagram/TikTok/mobile platforms before rendering their video.
+**Video Rendering System**: Uses FFmpeg's concat demuxer for reliable video concatenation, ensuring video duration synchronization with voiceover, and proper handling of video clips versus images. Includes keyframe intervals (every 60 frames) for improved video quality, seeking performance, and web playback optimization with faststart flag.
 
 ## External Dependencies
 
