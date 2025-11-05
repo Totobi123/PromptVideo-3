@@ -93,6 +93,7 @@ export default function Dashboard() {
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [renderJobId, setRenderJobId] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [fitMode, setFitMode] = useState("fit");
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
@@ -240,6 +241,7 @@ export default function Dashboard() {
     setCtaPlacements([]);
     setMusicMixing(null);
     setAspectRatio("16:9");
+    setFitMode("fit");
   };
 
   const handleExportScript = () => {
@@ -398,6 +400,7 @@ export default function Dashboard() {
           audioUrl: audioUrl,
           musicUrl: musicUrl || undefined,
           aspectRatio: aspectRatio,
+          fitMode: fitMode,
           musicMixing: musicMixing || undefined,
         }),
       });
@@ -705,6 +708,7 @@ export default function Dashboard() {
                     </p>
 
                     <SelectionBoxes type="aspectRatio" selected={aspectRatio} onSelect={setAspectRatio} />
+                    <SelectionBoxes type="fitMode" selected={fitMode} onSelect={setFitMode} />
                     
                     {isRendering && (
                       <div className="space-y-2">
