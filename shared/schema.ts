@@ -50,8 +50,36 @@ export const mediaItemSchema = z.object({
   url: z.string().optional(),
   thumbnail: z.string().optional(),
   isThumbnailCandidate: z.boolean().optional(),
-  transition: z.string().optional(),
   suggestedMediaSource: z.enum(["stock", "ai"]).optional(),
+  transition: z.enum([
+    "fade", 
+    "fadeblack", 
+    "fadewhite", 
+    "distance", 
+    "wipeleft", 
+    "wiperight", 
+    "wipeup", 
+    "wipedown", 
+    "slideleft", 
+    "slideright", 
+    "slideup", 
+    "slidedown", 
+    "circlecrop", 
+    "rectcrop", 
+    "circleopen", 
+    "circleclose", 
+    "dissolve"
+  ]).default("fade").optional(),
+  keyframeEffect: z.enum([
+    "none",
+    "zoomin",
+    "zoomout",
+    "panleft",
+    "panright",
+    "panup",
+    "pandown",
+    "kenburns"
+  ]).default("none").optional(),
 });
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;

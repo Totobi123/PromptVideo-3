@@ -218,8 +218,9 @@ export async function renderVideo(
       duration = duration * durationAdjustmentFactor;
       duration = Math.max(duration, 0.5);
       
-      console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration.toFixed(2)}s duration (adjusted for transitions)`);
-      await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration, dimensions.width, dimensions.height, fitMode);
+      const keyframeEffect = item.keyframeEffect || "none";
+      console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration.toFixed(2)}s duration with ${keyframeEffect} effect`);
+      await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration, dimensions.width, dimensions.height, fitMode, keyframeEffect);
       
       mediaFiles.push({ path: normalizedFilePath, duration });
       normalizedFiles.push(normalizedFilePath);
@@ -313,6 +314,46 @@ export async function renderVideo(
   }
 }
 
+function getKeyframeFilter(
+  effect: string | undefined,
+  width: number,
+  height: number,
+  duration: number
+): string {
+  if (!effect || effect === "none") {
+    return "";
+  }
+
+  const fps = 30;
+  const totalFrames = Math.floor(duration * fps);
+  
+  switch (effect) {
+    case "zoomin":
+      return `,zoompan=z='min(zoom+0.0015,1.5)':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${fps}`;
+    
+    case "zoomout":
+      return `,zoompan=z='if(lte(zoom,1.0),1.5,max(1.001,zoom-0.0015))':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}:fps=${fps}`;
+    
+    case "panleft":
+      return `,zoompan=z='1.2':x='iw-iw/zoom-((iw-iw/zoom)/${totalFrames})*on':y='0':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "panright":
+      return `,zoompan=z='1.2':x='((iw-iw/zoom)/${totalFrames})*on':y='0':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "panup":
+      return `,zoompan=z='1.2':x='0':y='ih-ih/zoom-((ih-ih/zoom)/${totalFrames})*on':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "pandown":
+      return `,zoompan=z='1.2':x='0':y='((ih-ih/zoom)/${totalFrames})*on':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    case "kenburns":
+      return `,zoompan=z='min(zoom+0.001,1.3)':x='if(gte(zoom,1.15),iw-iw/zoom-((iw-iw/zoom)/${totalFrames})*on,iw/2-(iw/zoom/2))':y='if(gte(zoom,1.15),0,ih/2-(ih/zoom/2))':d=${totalFrames}:s=${width}x${height}:fps=${fps}`;
+    
+    default:
+      return "";
+  }
+}
+
 function normalizeMediaFile(
   inputPath: string,
   outputPath: string,
@@ -320,14 +361,18 @@ function normalizeMediaFile(
   duration: number,
   width: number = 1920,
   height: number = 1080,
-  fitMode: "fit" | "crop" = "fit"
+  fitMode: "fit" | "crop" = "fit",
+  keyframeEffect?: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const command = ffmpeg(inputPath);
     
-    const videoFilter = fitMode === "crop"
+    const baseFilter = fitMode === "crop"
       ? `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`
       : `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
+    
+    const keyframeFilter = getKeyframeFilter(keyframeEffect, width, height, duration);
+    const videoFilter = baseFilter + keyframeFilter;
     
     if (type === "image") {
       command
