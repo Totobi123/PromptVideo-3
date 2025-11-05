@@ -139,6 +139,11 @@ export async function renderVideo(
   const tempDir = path.join(process.cwd(), "temp", jobId);
   const outputDir = path.join(process.cwd(), "output");
   
+  const aspectRatio = request.aspectRatio || "16:9";
+  const dimensions = aspectRatio === "16:9" 
+    ? { width: 1920, height: 1080 } 
+    : { width: 1080, height: 1920 };
+  
   try {
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
@@ -147,7 +152,7 @@ export async function renderVideo(
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    console.log(`[${jobId}] Starting video render process`);
+    console.log(`[${jobId}] Starting video render process with ${aspectRatio} aspect ratio (${dimensions.width}x${dimensions.height})`);
     await storage.updateRenderJob(jobId, { status: "processing", progress: 5 });
 
     const voiceoverPath = path.join(tempDir, "voiceover.mp3");
@@ -213,7 +218,7 @@ export async function renderVideo(
       duration = Math.max(duration, 0.5);
       
       console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration.toFixed(2)}s duration (adjusted for transitions)`);
-      await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration);
+      await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration, dimensions.width, dimensions.height);
       
       mediaFiles.push({ path: normalizedFilePath, duration });
       normalizedFiles.push(normalizedFilePath);
@@ -311,7 +316,9 @@ function normalizeMediaFile(
   inputPath: string,
   outputPath: string,
   type: "image" | "video",
-  duration: number
+  duration: number,
+  width: number = 1920,
+  height: number = 1080
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const command = ffmpeg(inputPath);
@@ -319,23 +326,27 @@ function normalizeMediaFile(
     if (type === "image") {
       command
         .inputOptions(["-loop", "1", "-t", duration.toString(), "-framerate", "30"])
-        .videoFilters("scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1")
+        .videoFilters(`scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`)
         .outputOptions([
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
           "-preset", "fast",
           "-crf", "23",
+          "-g", "60",
+          "-keyint_min", "60",
           "-an"
         ]);
     } else {
       command
         .inputOptions(["-t", duration.toString()])
-        .videoFilters("scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30")
+        .videoFilters(`scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30`)
         .outputOptions([
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
           "-preset", "fast",
           "-crf", "23",
+          "-g", "60",
+          "-keyint_min", "60",
           "-an"
         ]);
     }
@@ -506,6 +517,8 @@ async function concatenateMedia(
           "-pix_fmt", "yuv420p",
           "-preset", "medium",
           "-crf", "23",
+          "-g", "60",
+          "-keyint_min", "60",
           "-an"
         ])
         .output(outputPath)
@@ -556,7 +569,9 @@ async function concatenateMedia(
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
         "-preset", "medium",
-        "-crf", "23"
+        "-crf", "23",
+        "-g", "60",
+        "-keyint_min", "60"
       ])
       .output(outputPath)
       .on("end", () => resolve())
@@ -686,9 +701,14 @@ function combineVideoAndAudio(
       .outputOptions([
         "-map", "0:v:0",
         "-map", "1:a:0",
-        "-c:v", "copy",
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-crf", "23",
+        "-g", "60",
+        "-keyint_min", "60",
         "-c:a", "aac",
-        "-b:a", "128k"
+        "-b:a", "192k",
+        "-movflags", "+faststart"
       ])
       .output(outputPath)
       .on("progress", async (progress) => {

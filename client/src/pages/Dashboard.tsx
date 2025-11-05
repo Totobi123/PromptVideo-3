@@ -92,6 +92,7 @@ export default function Dashboard() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [renderJobId, setRenderJobId] = useState<string>("");
+  const [aspectRatio, setAspectRatio] = useState("16:9");
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
@@ -238,6 +239,7 @@ export default function Dashboard() {
     setChapters([]);
     setCtaPlacements([]);
     setMusicMixing(null);
+    setAspectRatio("16:9");
   };
 
   const handleExportScript = () => {
@@ -395,6 +397,7 @@ export default function Dashboard() {
           mediaItems: mediaItems,
           audioUrl: audioUrl,
           musicUrl: musicUrl || undefined,
+          aspectRatio: aspectRatio,
           musicMixing: musicMixing || undefined,
         }),
       });
@@ -700,6 +703,8 @@ export default function Dashboard() {
                     <p className="text-sm text-muted-foreground">
                       Combine your script, voiceover, music, and media into a final MP4 video.
                     </p>
+
+                    <SelectionBoxes type="aspectRatio" selected={aspectRatio} onSelect={setAspectRatio} />
                     
                     {isRendering && (
                       <div className="space-y-2">

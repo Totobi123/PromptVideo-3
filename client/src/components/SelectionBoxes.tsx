@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church, Image, Wand2 } from "lucide-react";
+import { Smile, Briefcase, Heart, Megaphone, Sparkles, Gauge, Zap, Rocket, Clock, Users, Baby, GraduationCap, User, Globe, Monitor, ChefHat, Plane, BookOpen, Gamepad2, Dumbbell, Video, Star, Play, Lightbulb, Church, Image, Wand2, RectangleHorizontal, RectangleVertical } from "lucide-react";
 
 interface SelectionOption {
   value: string;
@@ -8,7 +8,7 @@ interface SelectionOption {
 }
 
 interface SelectionBoxesProps {
-  type: "mood" | "pace" | "length" | "audience" | "category" | "mediaSource";
+  type: "mood" | "pace" | "length" | "audience" | "category" | "mediaSource" | "aspectRatio";
   selected: string;
   onSelect: (value: string) => void;
 }
@@ -63,6 +63,11 @@ const mediaSourceOptions: SelectionOption[] = [
   { value: "auto", label: "Auto-Select (Smart)", icon: <Sparkles className="w-5 h-5" /> },
 ];
 
+const aspectRatioOptions: SelectionOption[] = [
+  { value: "16:9", label: "16:9 (Landscape)", icon: <RectangleHorizontal className="w-5 h-5" /> },
+  { value: "9:16", label: "9:16 (Portrait)", icon: <RectangleVertical className="w-5 h-5" /> },
+];
+
 export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps) {
   const options = 
     type === "mood" ? moodOptions :
@@ -70,6 +75,7 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
     type === "length" ? lengthOptions :
     type === "audience" ? audienceOptions :
     type === "mediaSource" ? mediaSourceOptions :
+    type === "aspectRatio" ? aspectRatioOptions :
     categoryOptions;
   
   const title = 
@@ -78,6 +84,7 @@ export function SelectionBoxes({ type, selected, onSelect }: SelectionBoxesProps
     type === "length" ? "Video Length" :
     type === "audience" ? "Target Audience" :
     type === "mediaSource" ? "Media Source" :
+    type === "aspectRatio" ? "Aspect Ratio" :
     "Video Category";
 
   return (
