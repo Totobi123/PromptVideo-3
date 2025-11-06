@@ -28,6 +28,7 @@ Preferred communication style: Simple, everyday language.
 ### System Design Choices
 
 **Supabase Authentication**: Secure user authentication via email/password and Google OAuth.
+**User Onboarding Survey**: First-time users complete a multi-step survey after signup/login that collects use case (social media, blogging, marketing, etc.), user type (student, teacher, company, freelancer, etc.), and conditional company details (name and size if user type is "Company"). Data is stored in Supabase user metadata and the survey only appears once per user.
 **Multi-Step Form Flow**: Guides users through script generation (prompt → details → generating → results).
 **Real-time Media Fetching**: Fetches fresh media URLs from Pexels during script generation to ensure availability.
 **Client-Side Export**: All export functionality (script, audio, media list) is handled client-side.
