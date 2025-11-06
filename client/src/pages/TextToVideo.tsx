@@ -530,33 +530,13 @@ export default function TextToVideo() {
     hasYoutubeChannel: string;
     channelDescription?: string;
     selectedNiche?: string;
+    channelName?: string;
+    channelLogo?: string;
   }) => {
     try {
       setIsGeneratingChannel(true);
-      let channelName = "";
-      let channelLogo = "";
-
-      // If user doesn't have a channel, generate name and logo
-      if (data.hasYoutubeChannel === "no" && data.selectedNiche) {
-        try {
-          const result = await apiRequest<GenerateChannelNameResponse>(
-            "/api/generate-channel",
-            "POST",
-            { niche: data.selectedNiche }
-          );
-          channelName = result.channelName;
-          channelLogo = result.logoUrl;
-        } catch (error) {
-          console.error("Error generating channel:", error);
-          toast({
-            title: "Error",
-            description: "Failed to generate channel name. Please try again.",
-            variant: "destructive",
-          });
-          setIsGeneratingChannel(false);
-          return;
-        }
-      }
+      const channelName = data.channelName || "";
+      const channelLogo = data.channelLogo || "";
 
       const { error } = await updateUserProfile({
         hasYoutubeChannel: data.hasYoutubeChannel,
