@@ -39,11 +39,17 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
+      howFoundUs: null,
       useCase: null,
       userType: null,
       companyName: null,
       companySize: null,
-      onboardingCompleted: "false"
+      onboardingCompleted: "false",
+      hasYoutubeChannel: null,
+      channelDescription: null,
+      selectedNiche: null,
+      channelName: null,
+      channelLogo: null,
     };
     this.users.set(id, user);
     return user;

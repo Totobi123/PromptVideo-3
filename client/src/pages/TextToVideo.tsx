@@ -18,12 +18,14 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard } from "lucide-react";
+import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard, Bell, BellOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { GenerateChannelNameResponse } from "@shared/schema";
+import { renderManager } from "@/lib/renderManager";
+import { requestNotificationPermission, hasNotificationPermission, isNotificationSupported } from "@/lib/notifications";
 
 type Step = "prompt" | "details" | "generating" | "results";
 
@@ -127,9 +129,10 @@ export default function TextToVideo() {
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useLocalStorage<string>("video-rendered-url", "", 2, sessionKey);
-  const [renderJobId, setRenderJobId] = useState<string>("");
+  const [renderJobId, setRenderJobId] = useLocalStorage<string>("video-render-job-id", "", 2, sessionKey);
   const [aspectRatio, setAspectRatio] = useLocalStorage("video-aspect-ratio", "16:9", 2, sessionKey);
   const [fitMode, setFitMode] = useLocalStorage("video-fit-mode", "fit", 2, sessionKey);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(hasNotificationPermission());
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
@@ -420,6 +423,10 @@ export default function TextToVideo() {
       return;
     }
 
+    if (renderJobId) {
+      renderManager.acknowledgeJob(renderJobId);
+    }
+
     setIsRendering(true);
     setRenderProgress(0);
     setVideoUrl("");
@@ -448,39 +455,37 @@ export default function TextToVideo() {
       const job = await response.json();
       setRenderJobId(job.jobId);
 
-      const checkInterval = setInterval(async () => {
-        try {
-          const statusResponse = await fetch(`/api/render-video/${job.jobId}`);
-          if (!statusResponse.ok) {
-            clearInterval(checkInterval);
-            throw new Error("Failed to check render status");
-          }
-
-          const status = await statusResponse.json();
-          setRenderProgress(status.progress);
-
-          if (status.status === "completed") {
-            clearInterval(checkInterval);
-            setVideoUrl(status.videoUrl);
-            setIsRendering(false);
-            toast({
-              title: "Video Ready!",
-              description: "Your video has been rendered successfully.",
-            });
-          } else if (status.status === "failed") {
-            clearInterval(checkInterval);
-            setIsRendering(false);
-            throw new Error(status.error || "Video rendering failed");
-          }
-        } catch (error) {
-          clearInterval(checkInterval);
+      await renderManager.startRenderJob(job.jobId, {
+        onProgress: (progress) => {
+          setRenderProgress(progress);
+        },
+        onComplete: (url) => {
+          setVideoUrl(url);
           setIsRendering(false);
-          console.error("Error checking render status:", error);
-        }
-      }, 2000);
+          toast({
+            title: "Video Ready!",
+            description: "Your video has been rendered successfully.",
+          });
+        },
+        onError: (error) => {
+          setIsRendering(false);
+          setRenderJobId("");
+          toast({
+            title: "Rendering Failed",
+            description: error || "Failed to render video. Please try again.",
+            variant: "destructive",
+          });
+        },
+      });
+
+      toast({
+        title: "Rendering Started",
+        description: "Your video is being rendered. You can switch tabs and we'll notify you when it's ready.",
+      });
 
     } catch (error) {
       setIsRendering(false);
+      setRenderJobId("");
       console.error("Error rendering video:", error);
       toast({
         title: "Rendering Failed",
@@ -504,6 +509,40 @@ export default function TextToVideo() {
     }
   };
 
+  const handleToggleNotifications = async () => {
+    if (!isNotificationSupported()) {
+      toast({
+        title: "Not Supported",
+        description: "Your browser doesn't support notifications.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (hasNotificationPermission()) {
+      toast({
+        title: "Notifications Enabled",
+        description: "We'll notify you when your video is ready.",
+      });
+    } else {
+      const granted = await requestNotificationPermission();
+      setNotificationsEnabled(granted);
+      
+      if (granted) {
+        toast({
+          title: "Notifications Enabled",
+          description: "We'll notify you when your video is ready.",
+        });
+      } else {
+        toast({
+          title: "Permission Denied",
+          description: "You won't receive notifications when videos are ready.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const getCurrentStepNumber = () => {
     const stepMap: Record<Step, number> = {
       prompt: 1,
@@ -513,6 +552,70 @@ export default function TextToVideo() {
     };
     return stepMap[currentStep];
   };
+
+  // Request notification permission on mount and cleanup old jobs
+  useEffect(() => {
+    const requestPermission = async () => {
+      if (isNotificationSupported() && !hasNotificationPermission()) {
+        const granted = await requestNotificationPermission();
+        setNotificationsEnabled(granted);
+      }
+    };
+    requestPermission();
+    
+    renderManager.cleanupOldJobs();
+  }, []);
+
+  // Check for existing render job on mount
+  useEffect(() => {
+    if (renderJobId) {
+      const existingJob = renderManager.getActiveJob(renderJobId);
+      if (existingJob) {
+        setIsRendering(true);
+        setRenderProgress(existingJob.progress);
+        
+        if (existingJob.videoUrl) {
+          setVideoUrl(existingJob.videoUrl);
+          setIsRendering(false);
+        } else {
+          renderManager.registerCallbacks(renderJobId, {
+            onProgress: (progress) => {
+              setRenderProgress(progress);
+            },
+            onComplete: (url) => {
+              setVideoUrl(url);
+              setIsRendering(false);
+              toast({
+                title: "Video Ready!",
+                description: "Your video has been rendered successfully.",
+              });
+            },
+            onError: (error) => {
+              setIsRendering(false);
+              setRenderJobId("");
+              toast({
+                title: "Rendering Failed",
+                description: error || "Failed to render video. Please try again.",
+                variant: "destructive",
+              });
+            },
+          });
+        }
+      } else {
+        setRenderJobId("");
+        setIsRendering(false);
+      }
+    }
+  }, []);
+
+  // Cleanup callbacks on unmount
+  useEffect(() => {
+    return () => {
+      if (renderJobId) {
+        renderManager.unregisterCallbacks(renderJobId);
+      }
+    };
+  }, [renderJobId]);
 
   // Check if YouTube and regular onboarding are needed
   useEffect(() => {
@@ -995,6 +1098,15 @@ export default function TextToVideo() {
                     <p className="text-sm text-muted-foreground">
                       Combine your script, voiceover, music, and media into a final MP4 video.
                     </p>
+                    
+                    {isRendering && (
+                      <div className="flex items-start gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                        <AlertCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-primary">
+                          Rendering continues in the background. You can switch tabs or close this page - we'll notify you when it's ready!
+                        </p>
+                      </div>
+                    )}
 
                     <SelectionBoxes type="aspectRatio" selected={aspectRatio} onSelect={setAspectRatio} />
                     <SelectionBoxes type="fitMode" selected={fitMode} onSelect={setFitMode} />
@@ -1022,16 +1134,41 @@ export default function TextToVideo() {
                       </div>
                     )}
 
-                    <Button
-                      data-testid="button-make-video"
-                      onClick={handleMakeVideo}
-                      disabled={isRendering || !audioUrl}
-                      size="lg"
-                      className="w-full gap-2"
-                    >
-                      <Video className="w-5 h-5" />
-                      {isRendering ? "Rendering..." : videoUrl ? "Render Again" : "Make Video Now"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        data-testid="button-make-video"
+                        onClick={handleMakeVideo}
+                        disabled={isRendering || !audioUrl}
+                        size="lg"
+                        className="flex-1 gap-2"
+                      >
+                        <Video className="w-5 h-5" />
+                        {isRendering ? "Rendering..." : videoUrl ? "Render Again" : "Make Video Now"}
+                      </Button>
+                      
+                      {isNotificationSupported() && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              data-testid="button-toggle-notifications"
+                              onClick={handleToggleNotifications}
+                              variant={notificationsEnabled ? "default" : "outline"}
+                              size="lg"
+                              className="gap-2"
+                            >
+                              {notificationsEnabled ? (
+                                <Bell className="w-5 h-5" />
+                              ) : (
+                                <BellOff className="w-5 h-5" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{notificationsEnabled ? "Notifications enabled" : "Enable notifications"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                   </div>
                 </Card>
                 </motion.div>
