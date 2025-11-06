@@ -762,7 +762,12 @@ export default function TextToVideo() {
                       Describe your video idea and let AI generate a professional script with voiceover and media recommendations
                     </p>
                   </div>
-                  <PromptInput value={prompt} onChange={setPrompt} />
+                  <PromptInput 
+                    value={prompt} 
+                    onChange={setPrompt} 
+                    userNiche={userProfile?.selectedNiche}
+                    channelDescription={userProfile?.channelDescription}
+                  />
                   <div className="space-y-2">
                     <Button
                       data-testid="button-continue-to-details"
