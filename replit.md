@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 **UI Component System**: shadcn/ui (New York variant) built on Radix UI.
 **Styling**: Tailwind CSS with a custom design system, dark mode default, and a primary red accent.
 **State Management**: React Query for server state; local component state for multi-step forms.
-**Routing**: Wouter for client-side routing, handling public and protected routes (`/`, `/signup`, `/signin`, `/dashboard`, `/dashboard/my-project`).
+**Routing**: Wouter for client-side routing, handling public and protected routes (`/`, `/signup`, `/signin`, `/dashboard`, `/dashboard/my-project`, `/dashboard/analytics`, `/dashboard/settings`).
 **Form Handling**: React Hook Form with Zod validation.
 **My Project**: User-specific project dashboard that displays all generations (scripts, channel names, video ideas, thumbnails, audio) with 2-hour expiration, auto-refreshing every 30 seconds. All content is automatically saved to Supabase and accessible across devices.
 
@@ -42,6 +42,19 @@ Preferred communication style: Simple, everyday language.
 **Scaling Mode Selection**: Users can choose how media is scaled to fit the selected aspect ratio: "Fit (Add Padding)" maintains original aspect ratio and adds black bars if needed, while "Crop (Zoom to Fill)" scales media to fill the frame completely, cropping excess content for a seamless fit.
 **Video Rendering System**: Uses FFmpeg's xfade filter for professional video transitions with 0.8s duration between scenes. Supports 17 transition types: fade, cut, fadeblack, fadewhite, distance, wipeleft, wiperight, wipeup, wipedown, slideleft, slideright, slideup, slidedown, circlecrop, rectcrop, circleopen, circleclose, and dissolve. Features 19 keyframe motion effects per scene: none, zoomin, zoomout, panleft, panright, panup, pandown, kenburns, zoominslow, zoomoutslow, zoominfast, zoomoutfast, panleftup, panrightup, panleftdown, panrightdown, rotate, spiral, shake, and drift. Includes keyframe intervals (every 60 frames) for improved video quality, seeking performance, and web playback optimization with faststart flag. Media scaling applies appropriate FFmpeg filters based on user's fitMode choice: force_original_aspect_ratio=decrease with padding for "fit" mode, or force_original_aspect_ratio=increase with crop for "crop" mode.
 **Background Video Rendering**: Video rendering continues in the background even when users switch tabs or close the page. The render manager uses localStorage to persist job state and automatically resumes polling when the page is reopened. Browser notifications alert users when rendering completes (if permission is granted and the tab is not active). Completed renders persist for 24 hours and are automatically cleaned up. Users can enable/disable notifications via a bell icon next to the render button.
+**Usage Analytics Dashboard**: Comprehensive analytics system tracking all user generations with real-time statistics including:
+  - Generation counters by type (scripts, channel names, video ideas, thumbnails, audio files)
+  - Usage over time visualization with daily, weekly, and monthly views using recharts
+  - Most frequently used settings analysis (top moods, paces, and categories)
+  - Quick stats including average script length, total render time, and most common aspect ratio
+  - All analytics data is aggregated from the generation_history table in real-time
+**User Settings & Preferences**: Centralized settings management allowing users to:
+  - Configure browser and email notifications for video generation completion
+  - Set default preferences (mood, pace, category, media source, aspect ratio) that auto-populate in generation forms
+  - View YouTube channel connection status
+  - Export all user data and generation history in JSON format
+  - Manage account settings including account deletion
+  - All settings are stored in the users table and synced across devices via Supabase
 
 ## External Dependencies
 
