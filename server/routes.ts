@@ -10,7 +10,8 @@ import {
   updateUserProfileSchema,
   generateChannelNameRequestSchema,
   generateVideoIdeaRequestSchema,
-  generateThumbnailRequestSchema
+  generateThumbnailRequestSchema,
+  getHistoryRequestSchema
 } from "@shared/schema";
 import { generateVideoScript, improvePrompt, suggestDetails, generateChannelName, generateVideoIdea } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
@@ -18,8 +19,50 @@ import { generateAIImage } from "./services/cloudflare-ai";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
 import { searchBackgroundMusic } from "./services/freesound";
 import { renderVideo, getAudioDuration, recalculateMediaTimestamps } from "./services/videoRenderer";
+import { supabase } from "./lib/supabase";
+
+async function saveToHistory(
+  userId: string | undefined,
+  type: 'script' | 'channel_name' | 'video_idea' | 'thumbnail',
+  prompt: string | undefined,
+  result: any
+) {
+  if (!userId || !supabase) return;
+  
+  try {
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 2);
+
+    await (supabase as any)
+      .from('generation_history')
+      .insert({
+        user_id: userId,
+        type,
+        prompt,
+        result,
+        expires_at: expiresAt.toISOString()
+      });
+  } catch (error) {
+    console.error('Failed to save to history:', error);
+  }
+}
+
+async function cleanupExpiredHistory() {
+  if (!supabase) return;
+  
+  try {
+    await (supabase as any)
+      .from('generation_history')
+      .delete()
+      .lt('expires_at', new Date().toISOString());
+  } catch (error) {
+    console.error('Failed to cleanup expired history:', error);
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  setInterval(cleanupExpiredHistory, 5 * 60 * 1000);
+  cleanupExpiredHistory();
   // Generate video script with AI
   app.post("/api/generate-script", async (req, res) => {
     try {
@@ -84,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Continue with original timestamps if recalculation fails
       }
 
-      res.json({
+      const response = {
         segments: result.segments,
         mediaItems: finalMediaItems,
         voiceId: voiceInfo.voiceId,
@@ -98,7 +141,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chapters: result.chapters,
         ctaPlacements: result.ctaPlacements,
         musicMixing: result.musicMixing,
-      });
+      };
+
+      await saveToHistory(
+        req.header('x-user-id'),
+        'script',
+        validatedData.prompt,
+        response
+      );
+
+      res.json(response);
     } catch (error) {
       console.error("Error generating script:", error);
       res.status(500).json({ 
@@ -227,6 +279,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateChannelName(validatedData.niche);
       
+      await saveToHistory(
+        req.header('x-user-id'),
+        'channel_name',
+        validatedData.niche,
+        result
+      );
+      
       res.json(result);
     } catch (error) {
       console.error("Error generating channel name:", error);
@@ -242,6 +301,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = generateVideoIdeaRequestSchema.parse(req.body);
       
       const result = await generateVideoIdea(validatedData);
+      
+      await saveToHistory(
+        req.header('x-user-id'),
+        'video_idea',
+        validatedData.niche,
+        result
+      );
       
       res.json(result);
     } catch (error) {
@@ -261,11 +327,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `YouTube thumbnail: ${validatedData.title}. Style: ${validatedData.style}, professional, eye-catching, high quality`
       );
       
-      res.json({ thumbnailUrl: thumbnailUrl.url });
+      const result = { thumbnailUrl: thumbnailUrl.url };
+      
+      await saveToHistory(
+        req.header('x-user-id'),
+        'thumbnail',
+        validatedData.title,
+        result
+      );
+      
+      res.json(result);
     } catch (error) {
       console.error("Error generating thumbnail:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to generate thumbnail" 
+      });
+    }
+  });
+
+  // Get generation history
+  app.get("/api/history", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.json([]);
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { type, limit } = getHistoryRequestSchema.parse({
+        type: req.query.type,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
+      });
+
+      let query = (supabase as any)
+        .from('generation_history')
+        .select('*')
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (type) {
+        query = query.eq('type', type);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      res.json(data || []);
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch history" 
       });
     }
   });

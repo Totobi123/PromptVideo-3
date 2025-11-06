@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { supabase } from "./lib/supabase";
 
 const app = express();
 
@@ -15,6 +16,22 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+app.use(async (req, _res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ') && supabase) {
+    try {
+      const token = authHeader.substring(7);
+      const { data: { user } } = await (supabase as any).auth.getUser(token);
+      if (user) {
+        req.headers['x-user-id'] = user.id;
+      }
+    } catch (error) {
+      console.error('Error extracting user from token:', error);
+    }
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -323,3 +323,27 @@ export const generateThumbnailResponseSchema = z.object({
 });
 
 export type GenerateThumbnailResponse = z.infer<typeof generateThumbnailResponseSchema>;
+
+// Generation history schemas
+export const generationHistory = pgTable("generation_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  type: text("type").notNull(),
+  prompt: text("prompt"),
+  result: jsonb("result").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertGenerationHistorySchema = createInsertSchema(generationHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertGenerationHistory = z.infer<typeof insertGenerationHistorySchema>;
+export type GenerationHistory = typeof generationHistory.$inferSelect;
+
+export const getHistoryRequestSchema = z.object({
+  type: z.enum(["script", "channel_name", "video_idea", "thumbnail"]).optional(),
+  limit: z.number().default(10),
+});

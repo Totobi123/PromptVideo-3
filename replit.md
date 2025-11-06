@@ -18,16 +18,19 @@ Preferred communication style: Simple, everyday language.
 **State Management**: React Query for server state; local component state for multi-step forms.
 **Routing**: Wouter for client-side routing, handling public and protected routes (`/`, `/signup`, `/signin`, `/dashboard`).
 **Form Handling**: React Hook Form with Zod validation.
+**Generation History**: Displays recent generations (scripts, channel names, video ideas, thumbnails) with 2-hour expiration, auto-refreshing every 30 seconds.
 
 ### Backend Architecture
 
 **Server Framework**: Express.js on Node.js with TypeScript.
-**API Design**: RESTful API with endpoints for `/api/generate-script` and `/api/generate-audio`.
+**API Design**: RESTful API with endpoints for generation, rendering, and history retrieval.
 **Development Setup**: Custom Vite middleware integrates Express with the Vite development environment.
+**Authentication Middleware**: Extracts user ID from Supabase JWT tokens and passes to API routes.
 
 ### System Design Choices
 
 **Supabase Authentication**: Secure user authentication via email/password and Google OAuth.
+**Generation History Storage**: All generations (scripts, channel names, video ideas, thumbnails) are automatically saved to Supabase with 2-hour expiration. History is user-specific and queryable by type. Automatic cleanup runs every 5 minutes to remove expired records.
 **User Onboarding Survey**: First-time users complete a multi-step survey after signup/login that collects use case (social media, blogging, marketing, etc.), user type (student, teacher, company, freelancer, etc.), and conditional company details (name and size if user type is "Company"). Data is stored in Supabase user metadata and the survey only appears once per user.
 **Multi-Step Form Flow**: Guides users through script generation (prompt → details → generating → results).
 **Real-time Media Fetching**: Fetches fresh media URLs from Pexels during script generation to ensure availability.
@@ -42,8 +45,8 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 **AI Script Generation**: OpenRouter API (GPT-3.5 Turbo) for generating structured, timestamped video scripts based on user prompts and category-specific guidelines.
-**Text-to-Speech**: Murf.ai API for generating voiceover audio with mood-based voice selection.
+**Text-to-Speech**: Murf.ai API for generating voiceover audio with mood-based voice selection. Each mood (happy, casual, sad, promotional, enthusiastic) has 3 voice options that are randomly selected for variety.
 **Stock Media**: Pexels API for royalty-free images and videos.
 **Background Music**: FreeSound API for royalty-free, Creative Commons-licensed background music, with attribution support.
 **Authentication**: Supabase for user authentication (email/password, Google OAuth) and session management.
-**Database**: PostgreSQL via Neon serverless driver, with Drizzle ORM for type-safe operations.
+**Database**: PostgreSQL via Supabase for generation history storage with Row Level Security (RLS) policies. Local storage uses Neon serverless driver with Drizzle ORM for type-safe operations.
