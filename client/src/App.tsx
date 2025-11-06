@@ -18,6 +18,7 @@ import ScriptGeneration from "@/pages/ScriptGeneration";
 import TextToSpeech from "@/pages/TextToSpeech";
 import Analytics from "@/pages/Analytics";
 import ThumbnailGeneration from "@/pages/ThumbnailGeneration";
+import History from "@/pages/History";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -154,6 +155,15 @@ function Router() {
             <ProtectedRoute>
               <DashboardLayout>
                 <ThumbnailGeneration />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/dashboard/history">
+          <AnimatedRoute>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <History />
               </DashboardLayout>
             </ProtectedRoute>
           </AnimatedRoute>

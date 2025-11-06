@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 export default function ThumbnailGeneration() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
-  const [title, setTitle] = useState("");
-  const [style, setStyle] = useState("bold");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [title, setTitle] = useLocalStorage("thumbnail-title", "", 2, "thumbnail-session");
+  const [style, setStyle] = useLocalStorage("thumbnail-style", "bold", 2, "thumbnail-session");
+  const [thumbnailUrl, setThumbnailUrl] = useLocalStorage("thumbnail-url", "", 2, "thumbnail-session");
 
   const generateThumbnailMutation = useMutation({
     mutationFn: async () => {

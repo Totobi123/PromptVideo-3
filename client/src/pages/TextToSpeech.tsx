@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,13 +8,14 @@ import { Volume2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 export default function TextToSpeech() {
   const { toast } = useToast();
-  const [text, setText] = useState("");
-  const [voiceId, setVoiceId] = useState("en-US-natalie");
-  const [pace, setPace] = useState("normal");
-  const [audioUrl, setAudioUrl] = useState("");
+  const [text, setText] = useLocalStorage("tts-text", "", 2, "tts-session");
+  const [voiceId, setVoiceId] = useLocalStorage("tts-voice", "en-US-natalie", 2, "tts-session");
+  const [pace, setPace] = useLocalStorage("tts-pace", "normal", 2, "tts-session");
+  const [audioUrl, setAudioUrl] = useLocalStorage("tts-audio-url", "", 2, "tts-session");
 
   const generateAudioMutation = useMutation({
     mutationFn: async () => {

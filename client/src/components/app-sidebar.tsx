@@ -19,7 +19,8 @@ import {
   BarChart3, 
   Image, 
   LogOut,
-  Youtube
+  Youtube,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,14 +48,19 @@ const menuItems = [
     icon: Mic,
   },
   {
-    title: "Analytics",
-    url: "/dashboard/analytics",
-    icon: BarChart3,
-  },
-  {
     title: "Thumbnail Generator",
     url: "/dashboard/thumbnail",
     icon: Image,
+  },
+  {
+    title: "History",
+    url: "/dashboard/history",
+    icon: History,
+  },
+  {
+    title: "Analytics",
+    url: "/dashboard/analytics",
+    icon: BarChart3,
   },
 ];
 

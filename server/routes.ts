@@ -23,7 +23,7 @@ import { supabase } from "./lib/supabase";
 
 async function saveToHistory(
   userId: string | undefined,
-  type: 'script' | 'channel_name' | 'video_idea' | 'thumbnail',
+  type: 'script' | 'channel_name' | 'video_idea' | 'thumbnail' | 'audio',
   prompt: string | undefined,
   result: any
 ) {
@@ -170,7 +170,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.pace
       );
       
-      res.json({ audioUrl });
+      const result = { audioUrl };
+      
+      await saveToHistory(
+        req.header('x-user-id'),
+        'audio',
+        validatedData.text.substring(0, 100),
+        result
+      );
+      
+      res.json(result);
     } catch (error) {
       console.error("Error generating audio:", error);
       res.status(500).json({ 
@@ -383,6 +392,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching history:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to fetch history" 
+      });
+    }
+  });
+
+  // Delete history item
+  app.delete("/api/history/:id", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(503).json({ error: "Database not available" });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+
+      const { error } = await (supabase as any)
+        .from('generation_history')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting history item:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to delete history item" 
       });
     }
   });

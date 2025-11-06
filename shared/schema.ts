@@ -344,6 +344,6 @@ export type InsertGenerationHistory = z.infer<typeof insertGenerationHistorySche
 export type GenerationHistory = typeof generationHistory.$inferSelect;
 
 export const getHistoryRequestSchema = z.object({
-  type: z.enum(["script", "channel_name", "video_idea", "thumbnail"]).optional(),
+  type: z.enum(["script", "channel_name", "video_idea", "thumbnail", "audio"]).optional(),
   limit: z.number().default(10),
 });

@@ -22,6 +22,7 @@ import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { GenerateChannelNameResponse } from "@shared/schema";
 
 type Step = "prompt" | "details" | "generating" | "results";
@@ -82,52 +83,53 @@ export default function TextToVideo() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showYoutubeOnboarding, setShowYoutubeOnboarding] = useState(false);
   const [isGeneratingChannel, setIsGeneratingChannel] = useState(false);
-  const [currentStep, setCurrentStep] = useState<Step>("prompt");
-  const [prompt, setPrompt] = useState("");
-  const [mood, setMood] = useState("");
-  const [pace, setPace] = useState("");
-  const [length, setLength] = useState("");
-  const [audience, setAudience] = useState("");
-  const [category, setCategory] = useState("");
-  const [mediaSource, setMediaSource] = useState("stock");
+  const sessionKey = "video-session";
+  const [currentStep, setCurrentStep] = useLocalStorage<Step>("video-current-step", "prompt", 2, sessionKey);
+  const [prompt, setPrompt] = useLocalStorage("video-prompt", "", 2, sessionKey);
+  const [mood, setMood] = useLocalStorage("video-mood", "", 2, sessionKey);
+  const [pace, setPace] = useLocalStorage("video-pace", "", 2, sessionKey);
+  const [length, setLength] = useLocalStorage("video-length", "", 2, sessionKey);
+  const [audience, setAudience] = useLocalStorage("video-audience", "", 2, sessionKey);
+  const [category, setCategory] = useLocalStorage("video-category", "", 2, sessionKey);
+  const [mediaSource, setMediaSource] = useLocalStorage("video-media-source", "stock", 2, sessionKey);
   const [progress, setProgress] = useState(0);
-  const [scriptSegments, setScriptSegments] = useState<ScriptSegment[]>([]);
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  const [audioUrl, setAudioUrl] = useState<string>("");
-  const [voiceId, setVoiceId] = useState<string>("");
-  const [voiceName, setVoiceName] = useState<string>("");
-  const [musicUrl, setMusicUrl] = useState<string>("");
-  const [musicTitle, setMusicTitle] = useState<string>("");
-  const [musicCreator, setMusicCreator] = useState<string>("");
-  const [musicLicense, setMusicLicense] = useState<string>("");
-  const [seoPackage, setSeoPackage] = useState<{
+  const [scriptSegments, setScriptSegments] = useLocalStorage<ScriptSegment[]>("video-script-segments", [], 2, sessionKey);
+  const [mediaItems, setMediaItems] = useLocalStorage<MediaItem[]>("video-media-items", [], 2, sessionKey);
+  const [audioUrl, setAudioUrl] = useLocalStorage<string>("video-audio-url", "", 2, sessionKey);
+  const [voiceId, setVoiceId] = useLocalStorage<string>("video-voice-id", "", 2, sessionKey);
+  const [voiceName, setVoiceName] = useLocalStorage<string>("video-voice-name", "", 2, sessionKey);
+  const [musicUrl, setMusicUrl] = useLocalStorage<string>("video-music-url", "", 2, sessionKey);
+  const [musicTitle, setMusicTitle] = useLocalStorage<string>("video-music-title", "", 2, sessionKey);
+  const [musicCreator, setMusicCreator] = useLocalStorage<string>("video-music-creator", "", 2, sessionKey);
+  const [musicLicense, setMusicLicense] = useLocalStorage<string>("video-music-license", "", 2, sessionKey);
+  const [seoPackage, setSeoPackage] = useLocalStorage<{
     title: string;
     description: string;
     hashtags: string[];
-  } | null>(null);
-  const [chapters, setChapters] = useState<Array<{
+  } | null>("video-seo-package", null, 2, sessionKey);
+  const [chapters, setChapters] = useLocalStorage<Array<{
     timestamp: string;
     title: string;
-  }>>([]);
-  const [ctaPlacements, setCtaPlacements] = useState<Array<{
+  }>>("video-chapters", [], 2, sessionKey);
+  const [ctaPlacements, setCtaPlacements] = useLocalStorage<Array<{
     timestamp: string;
     type: "subscribe" | "like" | "comment" | "link" | "product";
     message: string;
-  }>>([]);
-  const [musicMixing, setMusicMixing] = useState<{
+  }>>("video-cta-placements", [], 2, sessionKey);
+  const [musicMixing, setMusicMixing] = useLocalStorage<{
     backgroundMusicVolume: number;
     voiceoverVolume: number;
     fadeInDuration: number;
     fadeOutDuration: number;
-  } | null>(null);
+  } | null>("video-music-mixing", null, 2, sessionKey);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
-  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [videoUrl, setVideoUrl] = useLocalStorage<string>("video-rendered-url", "", 2, sessionKey);
   const [renderJobId, setRenderJobId] = useState<string>("");
-  const [aspectRatio, setAspectRatio] = useState("16:9");
-  const [fitMode, setFitMode] = useState("fit");
+  const [aspectRatio, setAspectRatio] = useLocalStorage("video-aspect-ratio", "16:9", 2, sessionKey);
+  const [fitMode, setFitMode] = useLocalStorage("video-fit-mode", "fit", 2, sessionKey);
 
   const handleContinueToDetails = () => {
     if (prompt.trim()) {
