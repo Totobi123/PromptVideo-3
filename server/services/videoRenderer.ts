@@ -218,7 +218,14 @@ export async function renderVideo(
       duration = duration * durationAdjustmentFactor;
       duration = Math.max(duration, 0.5);
       
-      const keyframeEffect = item.keyframeEffect || "none";
+      let keyframeEffect = item.keyframeEffect || "none";
+      
+      const isAiImage = item.url.startsWith("/output/ai-images/");
+      if (aspectRatio === "9:16" && isAiImage && item.type === "image" && keyframeEffect === "none") {
+        keyframeEffect = "panright";
+        console.log(`[${jobId}] Auto-applying 'panright' effect for 9:16 AI-generated image`);
+      }
+      
       console.log(`[${jobId}] Normalizing media ${i} (${item.type}) to ${duration.toFixed(2)}s duration with ${keyframeEffect} effect`);
       await normalizeMediaFile(rawFilePath, normalizedFilePath, item.type, duration, dimensions.width, dimensions.height, fitMode, keyframeEffect);
       
@@ -670,7 +677,7 @@ async function concatenateMediaWithTransitions(
           filterParts.push(`[${prevLabel}][${i + 1}:v]xfade=transition=${transition}:duration=${TRANSITION_DURATION}:offset=${offset}[${nextLabel}]`);
         }
         
-        currentOffset = offset;
+        currentOffset += mediaFiles[i].duration - TRANSITION_DURATION;
       }
       
       const lastLabel = mediaFiles.length === 2 ? 'v01' : `v0${mediaFiles.length - 1}`;
