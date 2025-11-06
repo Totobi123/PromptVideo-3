@@ -9,8 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Bell, Settings2, Download, Trash2, CheckCircle, XCircle, Youtube } from "lucide-react";
+import { Bell, Settings2, Download, Trash2, CheckCircle, XCircle, Youtube, ExternalLink } from "lucide-react";
 import type { UpdateUserSettings } from "@shared/schema";
+import { useLocation } from "wouter";
 
 interface UserSettings {
   defaultMood?: string;
@@ -24,6 +25,7 @@ interface UserSettings {
 
 export default function Settings() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
   
   useEffect(() => {
@@ -34,6 +36,25 @@ export default function Settings() {
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/user/settings"],
+  });
+
+  const { data: youtubeChannel, isLoading: youtubeLoading } = useQuery<{
+    channelId: string;
+    channelTitle: string;
+    subscriberCount: string;
+    connectedAt: string;
+  } | null>({
+    queryKey: ["/api/youtube/channel"],
+    queryFn: async () => {
+      try {
+        return await apiRequest("/api/youtube/channel", "GET");
+      } catch (error: any) {
+        if (error.message?.includes("No YouTube channel connected")) {
+          return null;
+        }
+        throw error;
+      }
+    },
   });
 
   const updateSettingsMutation = useMutation({
@@ -127,6 +148,46 @@ export default function Settings() {
   const handleUpdatePreference = (key: keyof UpdateUserSettings, value: string) => {
     updateSettingsMutation.mutate({ [key]: value });
   };
+
+  const connectYoutubeMutation = useMutation({
+    mutationFn: async () => {
+      const redirectUri = `${window.location.origin}/youtube/callback`;
+      const response = await apiRequest<{ authUrl: string }>("/api/youtube/auth/init", "POST", {
+        redirectUri,
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      window.location.href = data.authUrl;
+    },
+    onError: (error) => {
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Failed to connect YouTube channel",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const disconnectYoutubeMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/youtube/channel", "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/youtube/channel"] });
+      toast({
+        title: "Disconnected",
+        description: "Your YouTube channel has been disconnected",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to disconnect channel",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoading) {
     return (
@@ -358,22 +419,72 @@ export default function Settings() {
           <CardContent className="space-y-6">
             <div>
               <h3 className="text-sm font-medium mb-2">YouTube Channel Connection</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-2">
                 <Youtube className="h-5 w-5 text-red-600" />
-                <Badge variant="outline" data-testid="badge-youtube-status">
-                  Not Connected
-                </Badge>
+                {youtubeLoading ? (
+                  <Badge variant="outline" data-testid="badge-youtube-status">
+                    Loading...
+                  </Badge>
+                ) : youtubeChannel ? (
+                  <Badge variant="default" className="bg-green-600" data-testid="badge-youtube-status">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Connected
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" data-testid="badge-youtube-status">
+                    Not Connected
+                  </Badge>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Connect your YouTube channel to enable direct uploads and analytics
-              </p>
-              <Button 
-                variant="outline" 
-                className="mt-3"
-                data-testid="button-connect-youtube"
-              >
-                Connect YouTube Channel
-              </Button>
+              
+              {youtubeChannel ? (
+                <>
+                  <div className="p-3 bg-muted rounded-md mb-3">
+                    <p className="text-sm font-medium">{youtubeChannel.channelTitle}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {parseInt(youtubeChannel.subscriberCount).toLocaleString()} subscribers
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Connected {new Date(youtubeChannel.connectedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/youtube/channel")}
+                      data-testid="button-view-youtube-channel"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View Channel Details
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => disconnectYoutubeMutation.mutate()}
+                      disabled={disconnectYoutubeMutation.isPending}
+                      data-testid="button-disconnect-youtube"
+                    >
+                      {disconnectYoutubeMutation.isPending ? "Disconnecting..." : "Disconnect"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Connect your YouTube channel to enable direct uploads and analytics
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => connectYoutubeMutation.mutate()}
+                    disabled={connectYoutubeMutation.isPending}
+                    data-testid="button-connect-youtube"
+                  >
+                    <Youtube className="mr-2 h-4 w-4" />
+                    {connectYoutubeMutation.isPending ? "Connecting..." : "Connect YouTube Channel"}
+                  </Button>
+                </>
+              )}
             </div>
 
             <Separator />

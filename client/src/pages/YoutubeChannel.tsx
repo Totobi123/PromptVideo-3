@@ -3,12 +3,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Youtube, Link as LinkIcon, Unlink, Users, Video, Eye, Loader2 } from "lucide-react";
+import { Youtube, Link as LinkIcon, Unlink, Users, Video, Eye, Loader2, TrendingUp, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 export default function YoutubeChannel() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isConnecting, setIsConnecting] = useState(false);
 
   const { data: channelData, isLoading } = useQuery<{
@@ -225,24 +227,81 @@ export default function YoutubeChannel() {
                 </div>
               </div>
 
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={() => setLocation("/youtube/analytics")}
+                  variant="default"
+                  className="flex-1"
+                  data-testid="button-view-analytics"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  View Analytics
+                </Button>
+                <Button
+                  onClick={handleDisconnect}
+                  disabled={disconnectMutation.isPending}
+                  variant="outline"
+                  data-testid="button-disconnect-youtube"
+                >
+                  {disconnectMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Disconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <Unlink className="w-4 h-4 mr-2" />
+                      Disconnect
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Quick Insights
+              </CardTitle>
+              <CardDescription>
+                View AI-powered analytics for detailed channel insights and recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Average Views per Video</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Based on your total statistics</p>
+                  </div>
+                  <span className="text-lg font-bold">
+                    {parseInt(channelData.videoCount) > 0 
+                      ? Math.round(parseInt(channelData.viewCount) / parseInt(channelData.videoCount)).toLocaleString()
+                      : '0'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Subscriber to Video Ratio</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Videos per 1,000 subscribers</p>
+                  </div>
+                  <span className="text-lg font-bold">
+                    {parseInt(channelData.subscriberCount) > 0
+                      ? Math.round((parseInt(channelData.videoCount) / parseInt(channelData.subscriberCount)) * 1000).toLocaleString()
+                      : '0'}
+                  </span>
+                </div>
+              </div>
               <Button
-                onClick={handleDisconnect}
-                disabled={disconnectMutation.isPending}
+                onClick={() => setLocation("/youtube/analytics")}
                 variant="outline"
-                className="w-full"
-                data-testid="button-disconnect-youtube"
+                className="w-full mt-4"
+                data-testid="button-full-analytics"
               >
-                {disconnectMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Disconnecting...
-                  </>
-                ) : (
-                  <>
-                    <Unlink className="w-4 h-4 mr-2" />
-                    Disconnect Channel
-                  </>
-                )}
+                <BarChart3 className="w-4 h-4 mr-2" />
+                View Full Analytics & AI Insights
               </Button>
             </CardContent>
           </Card>
