@@ -12,7 +12,6 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { 
-  Video, 
   FileText, 
   Mic, 
   BarChart3, 
@@ -25,11 +24,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
-  {
-    title: "Text to Video",
-    url: "/dashboard/text-to-video",
-    icon: Video,
-  },
   {
     title: "Script Generation",
     url: "/dashboard/script",
