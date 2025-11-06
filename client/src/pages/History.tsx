@@ -84,7 +84,7 @@ export default function MyProject() {
       queryClient.invalidateQueries({ queryKey: ['/api/history'] });
       toast({
         title: "Deleted",
-        description: "History item deleted successfully",
+        description: "Item deleted successfully",
       });
       setDeleteDialogOpen(false);
       setItemToDelete(null);
