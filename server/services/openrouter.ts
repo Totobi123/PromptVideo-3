@@ -195,6 +195,7 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
       "description": "Specific, detailed description for stock search or AI generation",
       "isThumbnailCandidate": true,
       "transition": "fade",
+      "motionEffect": "none",
       "suggestedMediaSource": "stock"
     }
   ],
@@ -249,6 +250,8 @@ GUIDELINES:
    - For AI items: Be very detailed about composition, style, mood, and specific elements
    - For stock items: Use clear, searchable keywords that match common stock library content
    - Mark 1-2 items as thumbnail candidates
+   - TRANSITION TYPES (MUST use one of these EXACT values): "fade", "cut", "fadeblack", "fadewhite", "distance", "wipeleft", "wiperight", "wipeup", "wipedown", "slideleft", "slideright", "slideup", "slidedown", "circlecrop", "rectcrop", "circleopen", "circleclose", "dissolve"
+   - MOTION EFFECTS (MUST use one of these EXACT values): "none", "zoomin", "zoomout", "panleft", "panright", "panup", "pandown", "kenburns", "zoominslow", "zoomoutslow", "zoominfast", "zoomoutfast", "panleftup", "panrightup", "panleftdown", "panrightdown", "rotate", "spiral", "shake", "drift"
    
 4. SEO PACKAGE:
    - Title: 60 chars max, keyword-rich, compelling
