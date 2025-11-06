@@ -495,11 +495,28 @@ export default function TextToVideo() {
     }
   };
 
+  const generateOptimizedFilename = (title: string | undefined): string => {
+    if (!title) {
+      return "video.mp4";
+    }
+    
+    const sanitized = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+      .substring(0, 50);
+    
+    return sanitized ? `${sanitized}.mp4` : "video.mp4";
+  };
+
   const handleDownloadVideo = () => {
     if (videoUrl) {
+      const filename = generateOptimizedFilename(seoPackage?.title);
       const a = document.createElement("a");
       a.href = videoUrl;
-      a.download = "video.mp4";
+      a.download = filename;
       a.click();
       
       toast({
