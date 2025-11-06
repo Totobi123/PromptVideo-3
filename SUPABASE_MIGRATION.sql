@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS generation_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('script', 'channel_name', 'video_idea', 'thumbnail')),
+  type TEXT NOT NULL CHECK (type IN ('script', 'channel_name', 'video_idea', 'thumbnail', 'audio')),
   prompt TEXT,
   result JSONB NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -44,6 +44,6 @@ CREATE POLICY "Users can delete own history" ON generation_history
   USING (auth.uid()::text = user_id);
 
 COMMENT ON TABLE generation_history IS 'Stores user generation history with 2-hour expiration';
-COMMENT ON COLUMN generation_history.type IS 'Type of generation: script, channel_name, video_idea, or thumbnail';
+COMMENT ON COLUMN generation_history.type IS 'Type of generation: script, channel_name, video_idea, thumbnail, or audio';
 COMMENT ON COLUMN generation_history.result IS 'JSON result from the generation endpoint';
 COMMENT ON COLUMN generation_history.expires_at IS 'When this history record should be deleted (2 hours from creation)';

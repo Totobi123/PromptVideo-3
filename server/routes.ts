@@ -27,13 +27,22 @@ async function saveToHistory(
   prompt: string | undefined,
   result: any
 ) {
-  if (!userId || !supabase) return;
+  if (!userId) {
+    console.log('⚠️ saveToHistory: No userId provided, skipping save');
+    return;
+  }
+  
+  if (!supabase) {
+    console.log('⚠️ saveToHistory: Supabase client not available, skipping save');
+    return;
+  }
   
   try {
+    console.log(`📝 Saving ${type} to history for user ${userId.substring(0, 8)}...`);
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 2);
 
-    await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from('generation_history')
       .insert({
         user_id: userId,
@@ -41,9 +50,17 @@ async function saveToHistory(
         prompt,
         result,
         expires_at: expiresAt.toISOString()
-      });
+      })
+      .select();
+    
+    if (error) {
+      console.error('❌ Failed to save to history:', error.message);
+      throw error;
+    }
+    
+    console.log(`✅ Successfully saved ${type} to history`);
   } catch (error) {
-    console.error('Failed to save to history:', error);
+    console.error('❌ Failed to save to history:', error);
   }
 }
 
