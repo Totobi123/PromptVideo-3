@@ -125,6 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             return {
               ...item,
+              type: effectiveMediaSource === "ai" ? "image" : item.type,
               url: media.url,
               thumbnail: media.thumbnail,
             };
