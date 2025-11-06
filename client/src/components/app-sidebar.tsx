@@ -53,8 +53,8 @@ const menuItems = [
     icon: Image,
   },
   {
-    title: "History",
-    url: "/dashboard/history",
+    title: "My Project",
+    url: "/dashboard/my-project",
     icon: History,
   },
   {

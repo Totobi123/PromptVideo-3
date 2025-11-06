@@ -63,7 +63,7 @@ const typeColors = {
   audio: 'bg-pink-500/10 text-pink-500',
 };
 
-export default function History() {
+export default function MyProject() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -185,9 +185,9 @@ export default function History() {
     return (
       <div className="container mx-auto p-6 max-w-7xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">Generation History</h1>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">My Project</h1>
           <p className="text-muted-foreground" data-testid="text-page-description">
-            Loading your generation history...
+            Loading your projects...
           </p>
         </div>
       </div>
@@ -197,7 +197,7 @@ export default function History() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">Generation History</h1>
+        <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">My Project</h1>
         <p className="text-muted-foreground" data-testid="text-page-description">
           View, download, and manage your generated content. Items expire after 2 hours.
         </p>
@@ -218,10 +218,10 @@ export default function History() {
             <Card data-testid="card-empty-history">
               <CardContent className="py-16 text-center">
                 <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">No history yet</h3>
+                <h3 className="text-lg font-medium mb-2">No projects yet</h3>
                 <p className="text-muted-foreground">
                   {selectedType === 'all' 
-                    ? "Start creating content to see your history here"
+                    ? "Start creating content to see your projects here"
                     : `No ${typeLabels[selectedType as keyof typeof typeLabels]?.toLowerCase()} generations found`
                   }
                 </p>
@@ -378,7 +378,7 @@ export default function History() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this item?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this generation from your history.
+              This action cannot be undone. This will permanently delete this generation from your project.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
