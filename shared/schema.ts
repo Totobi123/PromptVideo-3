@@ -7,6 +7,11 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  useCase: text("use_case"),
+  userType: text("user_type"),
+  companyName: text("company_name"),
+  companySize: text("company_size"),
+  onboardingCompleted: text("onboarding_completed").default("false"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -14,7 +19,16 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+export const updateUserProfileSchema = z.object({
+  useCase: z.string().optional(),
+  userType: z.string().optional(),
+  companyName: z.string().optional(),
+  companySize: z.string().optional(),
+  onboardingCompleted: z.string().optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
 export type User = typeof users.$inferSelect;
 
 // Video generation schemas

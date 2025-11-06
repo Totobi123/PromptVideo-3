@@ -6,7 +6,8 @@ import {
   generateAudioRequestSchema,
   improvePromptRequestSchema,
   suggestDetailsRequestSchema,
-  renderVideoRequestSchema
+  renderVideoRequestSchema,
+  updateUserProfileSchema
 } from "@shared/schema";
 import { generateVideoScript, improvePrompt, suggestDetails } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
@@ -191,6 +192,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error getting render status:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to get render status" 
+      });
+    }
+  });
+
+  // Update user profile with onboarding data
+  app.patch("/api/user/:userId/profile", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const validatedData = updateUserProfileSchema.parse(req.body);
+      
+      const updatedUser = await storage.updateUserProfile(userId, validatedData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to update user profile" 
       });
     }
   });

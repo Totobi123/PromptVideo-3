@@ -3,14 +3,24 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
+export interface UserProfile {
+  useCase?: string;
+  userType?: string;
+  companyName?: string;
+  companySize?: string;
+  onboardingCompleted?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  userProfile: UserProfile | null;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  updateUserProfile: (profile: UserProfile) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,12 +28,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setUserProfile(session?.user?.user_metadata as UserProfile || null);
       setLoading(false);
     });
 
@@ -32,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setUserProfile(session?.user?.user_metadata as UserProfile || null);
       setLoading(false);
     });
 
@@ -65,14 +78,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const updateUserProfile = async (profile: UserProfile) => {
+    try {
+      const mergedProfile = { ...userProfile, ...profile };
+      const { error } = await supabase.auth.updateUser({
+        data: { ...mergedProfile }
+      });
+      
+      if (!error && user) {
+        setUserProfile(mergedProfile);
+      }
+      
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     user,
     session,
+    userProfile,
     loading,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
+    updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type RenderVideoRequest, type RenderVideoResponse } from "@shared/schema";
+import { type User, type InsertUser, type UpdateUserProfile, type RenderVideoRequest, type RenderVideoResponse } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 // modify the interface with any CRUD methods
@@ -8,6 +8,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserProfile(userId: string, profile: UpdateUserProfile): Promise<User | undefined>;
   
   createRenderJob(request: RenderVideoRequest): Promise<RenderVideoResponse>;
   getRenderJob(jobId: string): Promise<RenderVideoResponse | undefined>;
@@ -35,9 +36,26 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      useCase: null,
+      userType: null,
+      companyName: null,
+      companySize: null,
+      onboardingCompleted: "false"
+    };
     this.users.set(id, user);
     return user;
+  }
+
+  async updateUserProfile(userId: string, profile: UpdateUserProfile): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+    
+    const updatedUser: User = { ...user, ...profile };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 
   async createRenderJob(request: RenderVideoRequest): Promise<RenderVideoResponse> {

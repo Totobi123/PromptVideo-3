@@ -11,6 +11,7 @@ import { ExportButtons } from "@/components/ExportButtons";
 import { VoiceAndMusicInfo } from "@/components/VoiceAndMusicInfo";
 import { SEOPackage } from "@/components/SEOPackage";
 import { ProductionInfo } from "@/components/ProductionInfo";
+import { OnboardingSurvey, type OnboardingData } from "@/components/OnboardingSurvey";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Step = "prompt" | "details" | "generating" | "results";
 
@@ -73,6 +75,8 @@ const resultsCardVariants = {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const { userProfile, updateUserProfile } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("prompt");
   const [prompt, setPrompt] = useState("");
   const [mood, setMood] = useState("");
@@ -503,6 +507,44 @@ export default function Dashboard() {
     return stepMap[currentStep];
   };
 
+  // Check if onboarding is needed
+  useEffect(() => {
+    if (userProfile && !userProfile.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [userProfile]);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (data: OnboardingData) => {
+    try {
+      const { error } = await updateUserProfile({
+        ...data,
+        onboardingCompleted: true
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save onboarding data. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        setShowOnboarding(false);
+        toast({
+          title: "Welcome!",
+          description: "Your profile has been set up successfully.",
+        });
+      }
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save onboarding data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Update progress during generation
   useEffect(() => {
     if (isGenerating && progress < 90) {
@@ -604,6 +646,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <OnboardingSurvey open={showOnboarding} onComplete={handleOnboardingComplete} />
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
