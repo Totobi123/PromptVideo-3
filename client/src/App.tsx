@@ -19,6 +19,7 @@ import TextToSpeech from "@/pages/TextToSpeech";
 import Analytics from "@/pages/Analytics";
 import ThumbnailGeneration from "@/pages/ThumbnailGeneration";
 import MyProject from "@/pages/History";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -164,6 +165,15 @@ function Router() {
             <ProtectedRoute>
               <DashboardLayout>
                 <MyProject />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/dashboard/settings">
+          <AnimatedRoute>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Settings />
               </DashboardLayout>
             </ProtectedRoute>
           </AnimatedRoute>

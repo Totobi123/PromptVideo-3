@@ -18,6 +18,13 @@ export const users = pgTable("users", {
   selectedNiche: text("selected_niche"),
   channelName: text("channel_name"),
   channelLogo: text("channel_logo"),
+  defaultMood: text("default_mood"),
+  defaultPace: text("default_pace"),
+  defaultCategory: text("default_category"),
+  defaultMediaSource: text("default_media_source"),
+  defaultAspectRatio: text("default_aspect_ratio"),
+  notificationsEnabled: text("notifications_enabled").default("false"),
+  emailNotificationsEnabled: text("email_notifications_enabled").default("false"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -37,6 +44,13 @@ export const updateUserProfileSchema = z.object({
   selectedNiche: z.string().optional(),
   channelName: z.string().optional(),
   channelLogo: z.string().optional(),
+  defaultMood: z.string().optional(),
+  defaultPace: z.string().optional(),
+  defaultCategory: z.string().optional(),
+  defaultMediaSource: z.string().optional(),
+  defaultAspectRatio: z.string().optional(),
+  notificationsEnabled: z.string().optional(),
+  emailNotificationsEnabled: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -387,3 +401,63 @@ export const getHistoryRequestSchema = z.object({
   type: z.enum(["script", "channel_name", "video_idea", "thumbnail", "audio"]).optional(),
   limit: z.number().default(10),
 });
+
+// User settings schemas
+export const updateUserSettingsSchema = z.object({
+  defaultMood: z.enum(["happy", "casual", "sad", "promotional", "enthusiastic"]).optional(),
+  defaultPace: z.enum(["normal", "fast", "very_fast"]).optional(),
+  defaultCategory: z.enum(["tech", "cooking", "travel", "education", "gaming", "fitness", "vlog", "review", "tutorial", "entertainment", "gospel"]).optional(),
+  defaultMediaSource: z.enum(["stock", "ai", "auto"]).optional(),
+  defaultAspectRatio: z.enum(["16:9", "9:16"]).optional(),
+  notificationsEnabled: z.string().optional(),
+  emailNotificationsEnabled: z.string().optional(),
+});
+
+export type UpdateUserSettings = z.infer<typeof updateUserSettingsSchema>;
+
+// Analytics response schemas
+export const generationCountsResponseSchema = z.object({
+  scripts: z.number(),
+  videos: z.number(),
+  channelNames: z.number(),
+  ideas: z.number(),
+  thumbnails: z.number(),
+  audio: z.number(),
+});
+
+export type GenerationCountsResponse = z.infer<typeof generationCountsResponseSchema>;
+
+export const usageOverTimeResponseSchema = z.object({
+  data: z.array(z.object({
+    date: z.string(),
+    count: z.number(),
+  })),
+});
+
+export type UsageOverTimeResponse = z.infer<typeof usageOverTimeResponseSchema>;
+
+export const mostUsedSettingsResponseSchema = z.object({
+  moods: z.array(z.object({
+    name: z.string(),
+    count: z.number(),
+  })),
+  paces: z.array(z.object({
+    name: z.string(),
+    count: z.number(),
+  })),
+  categories: z.array(z.object({
+    name: z.string(),
+    count: z.number(),
+  })),
+});
+
+export type MostUsedSettingsResponse = z.infer<typeof mostUsedSettingsResponseSchema>;
+
+export const quickStatsResponseSchema = z.object({
+  averageScriptLength: z.number(),
+  mostCommonAspectRatio: z.string(),
+  totalRenderTime: z.number(),
+  totalGenerations: z.number(),
+});
+
+export type QuickStatsResponse = z.infer<typeof quickStatsResponseSchema>;

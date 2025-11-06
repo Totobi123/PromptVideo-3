@@ -14,7 +14,8 @@ import {
   generateChannelNameListRequestSchema,
   generateVideoIdeaRequestSchema,
   generateThumbnailRequestSchema,
-  getHistoryRequestSchema
+  getHistoryRequestSchema,
+  updateUserSettingsSchema
 } from "@shared/schema";
 import { generateVideoScript, improvePrompt, suggestDetails, generateChannelName, generateNicheSuggestions, explainNiche, generateChannelNameList, generateVideoIdea } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
@@ -489,6 +490,372 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error deleting history item:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to delete history item" 
+      });
+    }
+  });
+
+  // Analytics endpoints
+  app.get("/api/analytics/generation-counts", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.json({ scripts: 0, videos: 0, channelNames: 0, ideas: 0, thumbnails: 0, audio: 0 });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('generation_history')
+        .select('type')
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+
+      const counts = {
+        scripts: 0,
+        videos: 0,
+        channelNames: 0,
+        ideas: 0,
+        thumbnails: 0,
+        audio: 0,
+      };
+
+      data?.forEach((item: any) => {
+        if (item.type === 'script') counts.scripts++;
+        else if (item.type === 'channel_name') counts.channelNames++;
+        else if (item.type === 'video_idea') counts.ideas++;
+        else if (item.type === 'thumbnail') counts.thumbnails++;
+        else if (item.type === 'audio') counts.audio++;
+      });
+
+      res.json(counts);
+    } catch (error) {
+      console.error("Error fetching generation counts:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch generation counts" 
+      });
+    }
+  });
+
+  app.get("/api/analytics/usage-over-time", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.json({ data: [] });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const period = req.query.period as string || 'daily';
+      const now = new Date();
+      let daysBack = 7;
+      
+      if (period === 'weekly') daysBack = 28;
+      else if (period === 'monthly') daysBack = 90;
+
+      const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+
+      const { data, error } = await (supabase as any)
+        .from('generation_history')
+        .select('created_at')
+        .eq('user_id', userId)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const groupedData: { [key: string]: number } = {};
+      
+      data?.forEach((item: any) => {
+        const date = new Date(item.created_at);
+        let key: string;
+        
+        if (period === 'daily') {
+          key = date.toISOString().split('T')[0];
+        } else if (period === 'weekly') {
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          key = weekStart.toISOString().split('T')[0];
+        } else {
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+        
+        groupedData[key] = (groupedData[key] || 0) + 1;
+      });
+
+      const result = Object.entries(groupedData).map(([date, count]) => ({
+        date,
+        count,
+      }));
+
+      res.json({ data: result });
+    } catch (error) {
+      console.error("Error fetching usage over time:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch usage over time" 
+      });
+    }
+  });
+
+  app.get("/api/analytics/most-used-settings", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.json({ moods: [], paces: [], categories: [] });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('generation_history')
+        .select('result')
+        .eq('user_id', userId)
+        .eq('type', 'script')
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+
+      const moodCounts: { [key: string]: number } = {};
+      const paceCounts: { [key: string]: number } = {};
+      const categoryCounts: { [key: string]: number } = {};
+
+      data?.forEach((item: any) => {
+        const result = item.result;
+        if (result.mood) moodCounts[result.mood] = (moodCounts[result.mood] || 0) + 1;
+        if (result.pace) paceCounts[result.pace] = (paceCounts[result.pace] || 0) + 1;
+        if (result.category) categoryCounts[result.category] = (categoryCounts[result.category] || 0) + 1;
+      });
+
+      const moods = Object.entries(moodCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      const paces = Object.entries(paceCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+
+      const categories = Object.entries(categoryCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      res.json({ moods, paces, categories });
+    } catch (error) {
+      console.error("Error fetching most used settings:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch most used settings" 
+      });
+    }
+  });
+
+  app.get("/api/analytics/quick-stats", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.json({ 
+          averageScriptLength: 0, 
+          mostCommonAspectRatio: '16:9', 
+          totalRenderTime: 0, 
+          totalGenerations: 0 
+        });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('generation_history')
+        .select('*')
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+
+      let totalScriptLength = 0;
+      let scriptCount = 0;
+      const aspectRatioCounts: { [key: string]: number } = {};
+      let totalRenderTime = 0;
+
+      data?.forEach((item: any) => {
+        const result = item.result;
+        
+        if (item.type === 'script' && result.segments) {
+          const scriptText = result.segments.map((s: any) => s.text).join(' ');
+          totalScriptLength += scriptText.length;
+          scriptCount++;
+          
+          if (result.aspectRatio) {
+            aspectRatioCounts[result.aspectRatio] = (aspectRatioCounts[result.aspectRatio] || 0) + 1;
+          }
+          
+          if (result.segments.length > 0) {
+            const lastSegment = result.segments[result.segments.length - 1];
+            if (lastSegment.endTime) {
+              const [minutes, seconds] = lastSegment.endTime.split(':').map(Number);
+              totalRenderTime += minutes * 60 + seconds;
+            }
+          }
+        }
+      });
+
+      const averageScriptLength = scriptCount > 0 ? Math.round(totalScriptLength / scriptCount) : 0;
+      
+      let mostCommonAspectRatio = '16:9';
+      let maxCount = 0;
+      Object.entries(aspectRatioCounts).forEach(([ratio, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          mostCommonAspectRatio = ratio;
+        }
+      });
+
+      res.json({
+        averageScriptLength,
+        mostCommonAspectRatio,
+        totalRenderTime,
+        totalGenerations: data?.length || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching quick stats:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch quick stats" 
+      });
+    }
+  });
+
+  // User settings endpoints
+  app.get("/api/user/settings", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(503).json({ error: "Database not available" });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('users')
+        .select('default_mood, default_pace, default_category, default_media_source, default_aspect_ratio, notifications_enabled, email_notifications_enabled')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      res.json({
+        defaultMood: data?.default_mood,
+        defaultPace: data?.default_pace,
+        defaultCategory: data?.default_category,
+        defaultMediaSource: data?.default_media_source,
+        defaultAspectRatio: data?.default_aspect_ratio,
+        notificationsEnabled: data?.notifications_enabled,
+        emailNotificationsEnabled: data?.email_notifications_enabled,
+      });
+    } catch (error) {
+      console.error("Error fetching user settings:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch user settings" 
+      });
+    }
+  });
+
+  app.patch("/api/user/settings", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(503).json({ error: "Database not available" });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const validatedData = updateUserSettingsSchema.parse(req.body);
+      
+      const updateData: any = {};
+      if (validatedData.defaultMood !== undefined) updateData.default_mood = validatedData.defaultMood;
+      if (validatedData.defaultPace !== undefined) updateData.default_pace = validatedData.defaultPace;
+      if (validatedData.defaultCategory !== undefined) updateData.default_category = validatedData.defaultCategory;
+      if (validatedData.defaultMediaSource !== undefined) updateData.default_media_source = validatedData.defaultMediaSource;
+      if (validatedData.defaultAspectRatio !== undefined) updateData.default_aspect_ratio = validatedData.defaultAspectRatio;
+      if (validatedData.notificationsEnabled !== undefined) updateData.notifications_enabled = validatedData.notificationsEnabled;
+      if (validatedData.emailNotificationsEnabled !== undefined) updateData.email_notifications_enabled = validatedData.emailNotificationsEnabled;
+
+      const { data, error } = await (supabase as any)
+        .from('users')
+        .update(updateData)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      res.json({
+        defaultMood: data?.default_mood,
+        defaultPace: data?.default_pace,
+        defaultCategory: data?.default_category,
+        defaultMediaSource: data?.default_media_source,
+        defaultAspectRatio: data?.default_aspect_ratio,
+        notificationsEnabled: data?.notifications_enabled,
+        emailNotificationsEnabled: data?.email_notifications_enabled,
+      });
+    } catch (error) {
+      console.error("Error updating user settings:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to update user settings" 
+      });
+    }
+  });
+
+  app.get("/api/user/export-data", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(503).json({ error: "Database not available" });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const [userData, historyData] = await Promise.all([
+        (supabase as any)
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        (supabase as any)
+          .from('generation_history')
+          .select('*')
+          .eq('user_id', userId)
+          .gt('expires_at', new Date().toISOString())
+      ]);
+
+      if (userData.error) throw userData.error;
+      if (historyData.error) throw historyData.error;
+
+      const exportData = {
+        user: userData.data,
+        generationHistory: historyData.data,
+        exportedAt: new Date().toISOString(),
+      };
+
+      res.json(exportData);
+    } catch (error) {
+      console.error("Error exporting user data:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to export user data" 
       });
     }
   });
