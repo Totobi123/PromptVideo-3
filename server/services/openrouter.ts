@@ -174,6 +174,15 @@ REQUIREMENTS:
 - Target Audience: ${audienceDescriptions[request.audience]}
 - Category: ${categoryDescriptions[request.category]}
 
+CRITICAL - TRANSITION CONSTRAINTS:
+For ALL mediaItems, you MUST use ONLY these exact values:
+
+VALID TRANSITIONS (choose from): "fade", "cut", "fadeblack", "fadewhite", "distance", "wipeleft", "wiperight", "wipeup", "wipedown", "slideleft", "slideright", "slideup", "slidedown", "circlecrop", "rectcrop", "circleopen", "circleclose", "dissolve"
+
+VALID MOTION EFFECTS (choose from): "none", "zoomin", "zoomout", "panleft", "panright", "panup", "pandown", "kenburns", "zoominslow", "zoomoutslow", "zoominfast", "zoomoutfast", "panleftup", "panrightup", "panleftdown", "panrightdown", "rotate", "spiral", "shake", "drift"
+
+DO NOT use values like "zoom in", "fade out", "pan left" - use exact values from the lists above.
+
 OUTPUT FORMAT (return ONLY valid JSON, no markdown):
 {
   "segments": [
@@ -195,7 +204,7 @@ OUTPUT FORMAT (return ONLY valid JSON, no markdown):
       "description": "Specific, detailed description for stock search or AI generation",
       "isThumbnailCandidate": true,
       "transition": "fade",
-      "motionEffect": "none",
+      "motionEffect": "zoomin",
       "suggestedMediaSource": "stock"
     }
   ],
