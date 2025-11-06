@@ -11,11 +11,22 @@ interface OnboardingSurveyProps {
 }
 
 export interface OnboardingData {
+  howFoundUs: string;
   useCase: string;
   userType: string;
   companyName?: string;
   companySize?: string;
 }
+
+const HOW_FOUND_US = [
+  "Search Engine (Google, Bing, etc.)",
+  "Social Media",
+  "Friend or Colleague",
+  "YouTube",
+  "Online Ad",
+  "Blog or Article",
+  "Other"
+];
 
 const USE_CASES = [
   "Social Media Content Creation",
@@ -48,6 +59,7 @@ const COMPANY_SIZES = [
 
 export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
   const [step, setStep] = useState(1);
+  const [howFoundUs, setHowFoundUs] = useState("");
   const [selectedUseCase, setSelectedUseCase] = useState("");
   const [selectedUserType, setSelectedUserType] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -55,6 +67,7 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
 
   const handleFinish = () => {
     const data: OnboardingData = {
+      howFoundUs,
       useCase: selectedUseCase,
       userType: selectedUserType,
     };
@@ -68,11 +81,13 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
   };
 
   const handleNext = () => {
-    if (step === 1 && selectedUseCase) {
+    if (step === 1 && howFoundUs) {
       setStep(2);
-    } else if (step === 2 && selectedUserType) {
+    } else if (step === 2 && selectedUseCase) {
+      setStep(3);
+    } else if (step === 3 && selectedUserType) {
       if (selectedUserType === "Company") {
-        setStep(3);
+        setStep(4);
       } else {
         handleFinish();
       }
@@ -80,9 +95,10 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
   };
 
   const isStepValid = () => {
-    if (step === 1) return selectedUseCase !== "";
-    if (step === 2) return selectedUserType !== "";
-    if (step === 3) return companyName !== "" && companySize !== "";
+    if (step === 1) return howFoundUs !== "";
+    if (step === 2) return selectedUseCase !== "";
+    if (step === 3) return selectedUserType !== "";
+    if (step === 4) return companyName !== "" && companySize !== "";
     return false;
   };
 
@@ -98,6 +114,32 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
 
         <div className="space-y-6 py-4">
           {step === 1 && (
+            <div className="space-y-4">
+              <Label className="text-base font-medium" data-testid="label-how-found-us">
+                How did you find us?
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                {HOW_FOUND_US.map((source) => (
+                  <Button
+                    key={source}
+                    variant={howFoundUs === source ? "default" : "outline"}
+                    className="justify-start h-auto py-3 px-4"
+                    onClick={() => setHowFoundUs(source)}
+                    data-testid={`button-how-found-us-${source.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      {howFoundUs === source && (
+                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                      )}
+                      <span className="text-sm text-left flex-1">{source}</span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div className="space-y-4">
               <Label className="text-base font-medium" data-testid="label-use-case">
                 What do you want to use this for?
@@ -123,7 +165,7 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-4">
               <Label className="text-base font-medium" data-testid="label-user-type">
                 Who are you?
@@ -149,7 +191,7 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-4">
               <Label className="text-base font-medium" data-testid="label-company-info">
                 Tell us about your company
@@ -194,7 +236,7 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
 
         <div className="flex justify-between items-center pt-4 border-t">
           <div className="flex gap-1">
-            {[1, 2, selectedUserType === "Company" ? 3 : 2].map((s, idx) => (
+            {[1, 2, 3, selectedUserType === "Company" ? 4 : 3].map((s, idx) => (
               <div
                 key={idx}
                 className={`h-2 w-8 rounded-full transition-colors ${
@@ -205,11 +247,11 @@ export function OnboardingSurvey({ open, onComplete }: OnboardingSurveyProps) {
             ))}
           </div>
           <Button
-            onClick={step === 3 || (step === 2 && selectedUserType !== "Company") ? handleFinish : handleNext}
+            onClick={step === 4 || (step === 3 && selectedUserType !== "Company") ? handleFinish : handleNext}
             disabled={!isStepValid()}
             data-testid="button-next-finish"
           >
-            {step === 3 || (step === 2 && selectedUserType !== "Company") ? "Finish" : "Next"}
+            {step === 4 || (step === 3 && selectedUserType !== "Company") ? "Finish" : "Next"}
           </Button>
         </div>
       </DialogContent>
