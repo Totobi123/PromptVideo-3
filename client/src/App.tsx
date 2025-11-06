@@ -13,6 +13,7 @@ import Landing from "@/pages/Landing";
 import SignUp from "@/pages/SignUp";
 import SignIn from "@/pages/SignIn";
 import Dashboard from "@/pages/Dashboard";
+import TextToVideoScript from "@/pages/TextToVideoScript";
 import ScriptGeneration from "@/pages/ScriptGeneration";
 import TextToSpeech from "@/pages/TextToSpeech";
 import Analytics from "@/pages/Analytics";
@@ -108,6 +109,15 @@ function Router() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/dashboard/text-to-video-script">
+          <AnimatedRoute>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <TextToVideoScript />
               </DashboardLayout>
             </ProtectedRoute>
           </AnimatedRoute>
