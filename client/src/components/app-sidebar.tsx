@@ -32,8 +32,8 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Text to Video Script",
-    url: "/dashboard/text-to-video-script",
+    title: "Text to Video",
+    url: "/dashboard/text-to-video",
     icon: Video,
   },
   {

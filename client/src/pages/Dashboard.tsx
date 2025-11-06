@@ -8,10 +8,10 @@ import { Video, FileText, Mic, BarChart3, Image as ImageIcon, ArrowRight } from 
 
 const tools = [
   {
-    title: "Text to Video Script",
+    title: "Text to Video",
     description: "Generate complete video scripts with voiceover, music, and media recommendations",
     icon: Video,
-    href: "/dashboard/text-to-video-script",
+    href: "/dashboard/text-to-video",
     color: "text-primary",
   },
   {

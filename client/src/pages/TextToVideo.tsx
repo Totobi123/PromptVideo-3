@@ -76,7 +76,7 @@ const resultsCardVariants = {
   },
 };
 
-export default function TextToVideoScript() {
+export default function TextToVideo() {
   const { toast } = useToast();
   const { userProfile, updateUserProfile } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
