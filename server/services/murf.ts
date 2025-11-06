@@ -3,16 +3,38 @@ const MURF_API_URL = "https://api.murf.ai/v1/speech/generate";
 
 type Mood = "happy" | "casual" | "sad" | "promotional" | "enthusiastic";
 
-export const voiceMoodMapping: Record<Mood, { voiceId: string; voiceName: string; style: string }> = {
-  happy: { voiceId: "en-US-natalie", voiceName: "Natalie (Conversational)", style: "Conversational" },
-  casual: { voiceId: "en-US-amara", voiceName: "Amara (Conversational)", style: "Conversational" },
-  sad: { voiceId: "en-US-ken", voiceName: "Ken (Sad)", style: "Sad" },
-  promotional: { voiceId: "en-US-miles", voiceName: "Miles (Promo)", style: "Promo" },
-  enthusiastic: { voiceId: "en-US-natalie", voiceName: "Natalie (Inspirational)", style: "Inspirational" },
+export const voiceMoodMapping: Record<Mood, Array<{ voiceId: string; voiceName: string; style: string }>> = {
+  happy: [
+    { voiceId: "en-US-jayden", voiceName: "Jayden (Happy)", style: "Conversational" },
+    { voiceId: "en-US-evander", voiceName: "Evander (Happy)", style: "Conversational" },
+    { voiceId: "en-US-iris", voiceName: "Iris (Happy)", style: "Conversational" },
+  ],
+  casual: [
+    { voiceId: "en-UK-ruby", voiceName: "Ruby (Casual)", style: "Conversational" },
+    { voiceId: "it-IT-greta", voiceName: "Greta (Casual)", style: "Conversational" },
+    { voiceId: "en-UK-harrison", voiceName: "Harrison (Casual)", style: "Conversational" },
+  ],
+  sad: [
+    { voiceId: "en-US-samantha", voiceName: "Samantha (Sad)", style: "Sad" },
+    { voiceId: "en-US-daisy", voiceName: "Daisy (Sad)", style: "Sad" },
+    { voiceId: "en-US-ryan", voiceName: "Ryan (Sad)", style: "Sad" },
+  ],
+  promotional: [
+    { voiceId: "en-US-june", voiceName: "June (Promotional)", style: "Promo" },
+    { voiceId: "en-US-lucas", voiceName: "Lucas (Promotional)", style: "Promo" },
+    { voiceId: "en-US-denzel", voiceName: "Denzel (Promotional)", style: "Promo" },
+  ],
+  enthusiastic: [
+    { voiceId: "en-US-charles", voiceName: "Charles (Enthusiastic)", style: "Inspirational" },
+    { voiceId: "en-US-miles", voiceName: "Miles (Enthusiastic)", style: "Inspirational" },
+    { voiceId: "en-US-julia", voiceName: "Julia (Enthusiastic)", style: "Inspirational" },
+  ],
 };
 
 export function getVoiceForMood(mood: Mood): { voiceId: string; voiceName: string; style: string } {
-  return voiceMoodMapping[mood];
+  const voices = voiceMoodMapping[mood];
+  const randomIndex = Math.floor(Math.random() * voices.length);
+  return voices[randomIndex];
 }
 
 type Pace = "normal" | "fast" | "very_fast";

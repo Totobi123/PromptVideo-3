@@ -398,8 +398,6 @@ function normalizeMediaFile(
   keyframeEffect?: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const command = ffmpeg(inputPath);
-    
     const baseFilter = fitMode === "crop"
       ? `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1`
       : `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
@@ -408,19 +406,31 @@ function normalizeMediaFile(
     const videoFilter = baseFilter + keyframeFilter;
     
     if (type === "image") {
+      const command = ffmpeg();
       command
-        .inputOptions(["-loop", "1", "-t", duration.toString(), "-framerate", "30"])
+        .input(inputPath)
+        .inputOptions([
+          "-loop", "1",
+          "-framerate", "30"
+        ])
         .videoFilters(videoFilter)
         .outputOptions([
+          "-t", duration.toString(),
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
           "-preset", "fast",
           "-crf", "23",
           "-g", "60",
           "-keyint_min", "60",
+          "-r", "30",
           "-an"
-        ]);
+        ])
+        .output(outputPath)
+        .on("end", () => resolve())
+        .on("error", (err) => reject(new Error(`Failed to normalize image: ${err.message}`)))
+        .run();
     } else {
+      const command = ffmpeg(inputPath);
       command
         .inputOptions(["-t", duration.toString()])
         .videoFilters(`${videoFilter},fps=30`)
@@ -432,14 +442,12 @@ function normalizeMediaFile(
           "-g", "60",
           "-keyint_min", "60",
           "-an"
-        ]);
+        ])
+        .output(outputPath)
+        .on("end", () => resolve())
+        .on("error", (err) => reject(new Error(`Failed to normalize video: ${err.message}`)))
+        .run();
     }
-    
-    command
-      .output(outputPath)
-      .on("end", () => resolve())
-      .on("error", (err) => reject(new Error(`Failed to normalize ${type}: ${err.message}`)))
-      .run();
   });
 }
 
