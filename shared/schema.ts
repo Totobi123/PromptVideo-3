@@ -461,3 +461,135 @@ export const quickStatsResponseSchema = z.object({
 });
 
 export type QuickStatsResponse = z.infer<typeof quickStatsResponseSchema>;
+
+// YouTube channel connection schemas
+export const youtubeChannels = pgTable("youtube_channels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  channelId: text("channel_id").notNull().unique(),
+  channelTitle: text("channel_title").notNull(),
+  channelDescription: text("channel_description"),
+  thumbnailUrl: text("thumbnail_url"),
+  subscriberCount: text("subscriber_count"),
+  videoCount: text("video_count"),
+  viewCount: text("view_count"),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  tokenExpiresAt: timestamp("token_expires_at").notNull(),
+  connectedAt: timestamp("connected_at").defaultNow().notNull(),
+  lastSyncedAt: timestamp("last_synced_at"),
+});
+
+export const insertYoutubeChannelSchema = createInsertSchema(youtubeChannels).omit({
+  id: true,
+  connectedAt: true,
+});
+
+export type InsertYoutubeChannel = z.infer<typeof insertYoutubeChannelSchema>;
+export type YoutubeChannel = typeof youtubeChannels.$inferSelect;
+
+// YouTube video uploads tracking
+export const youtubeUploads = pgTable("youtube_uploads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  youtubeChannelId: text("youtube_channel_id").notNull(),
+  youtubeVideoId: text("youtube_video_id"),
+  renderJobId: text("render_job_id"),
+  title: text("title").notNull(),
+  description: text("description"),
+  thumbnailUrl: text("thumbnail_url"),
+  status: text("status").notNull().default("uploading"),
+  progress: text("progress").default("0"),
+  videoUrl: text("video_url"),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+  publishedAt: timestamp("published_at"),
+  error: text("error"),
+});
+
+export const insertYoutubeUploadSchema = createInsertSchema(youtubeUploads).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export type InsertYoutubeUpload = z.infer<typeof insertYoutubeUploadSchema>;
+export type YoutubeUpload = typeof youtubeUploads.$inferSelect;
+
+// YouTube OAuth and analytics schemas
+export const youtubeOAuthInitRequestSchema = z.object({
+  redirectUri: z.string().url(),
+});
+
+export type YoutubeOAuthInitRequest = z.infer<typeof youtubeOAuthInitRequestSchema>;
+
+export const youtubeOAuthInitResponseSchema = z.object({
+  authUrl: z.string().url(),
+});
+
+export type YoutubeOAuthInitResponse = z.infer<typeof youtubeOAuthInitResponseSchema>;
+
+export const youtubeOAuthCallbackRequestSchema = z.object({
+  code: z.string(),
+  redirectUri: z.string().url(),
+});
+
+export type YoutubeOAuthCallbackRequest = z.infer<typeof youtubeOAuthCallbackRequestSchema>;
+
+export const youtubeAnalyticsResponseSchema = z.object({
+  channelInfo: z.object({
+    channelId: z.string(),
+    title: z.string(),
+    description: z.string(),
+    thumbnailUrl: z.string(),
+    subscriberCount: z.number(),
+    videoCount: z.number(),
+    viewCount: z.number(),
+  }),
+  recentVideos: z.array(z.object({
+    videoId: z.string(),
+    title: z.string(),
+    description: z.string(),
+    thumbnailUrl: z.string(),
+    publishedAt: z.string(),
+    viewCount: z.number(),
+    likeCount: z.number(),
+    commentCount: z.number(),
+    duration: z.string(),
+  })),
+  analytics: z.object({
+    totalViews: z.number(),
+    totalWatchTime: z.number(),
+    averageViewDuration: z.number(),
+    subscriberChange: z.number(),
+    estimatedRevenue: z.number().optional(),
+  }),
+  aiInsights: z.object({
+    performanceSummary: z.string(),
+    strengths: z.array(z.string()),
+    improvements: z.array(z.string()),
+    recommendations: z.array(z.string()),
+    trendingTopics: z.array(z.string()),
+  }),
+});
+
+export type YoutubeAnalyticsResponse = z.infer<typeof youtubeAnalyticsResponseSchema>;
+
+export const publishToYoutubeRequestSchema = z.object({
+  renderJobId: z.string(),
+  title: z.string().min(1).max(100),
+  description: z.string().max(5000),
+  thumbnailUrl: z.string().url().optional(),
+  tags: z.array(z.string()).optional(),
+  categoryId: z.string().optional(),
+  privacyStatus: z.enum(["public", "private", "unlisted"]).default("public"),
+});
+
+export type PublishToYoutubeRequest = z.infer<typeof publishToYoutubeRequestSchema>;
+
+export const publishToYoutubeResponseSchema = z.object({
+  uploadId: z.string(),
+  status: z.string(),
+  youtubeVideoId: z.string().optional(),
+  videoUrl: z.string().optional(),
+});
+
+export type PublishToYoutubeResponse = z.infer<typeof publishToYoutubeResponseSchema>;

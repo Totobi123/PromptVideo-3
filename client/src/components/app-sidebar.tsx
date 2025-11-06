@@ -21,7 +21,9 @@ import {
   LogOut,
   Youtube,
   History,
-  Settings
+  Settings,
+  TrendingUp,
+  Link as LinkIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -120,6 +122,30 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>YouTube</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location === "/youtube/channel"}>
+                  <Link href="/youtube/channel">
+                    <LinkIcon className="h-4 w-4" />
+                    <span>Channel Connection</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location === "/youtube/analytics"}>
+                  <Link href="/youtube/analytics">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Channel Analytics</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

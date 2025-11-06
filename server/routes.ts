@@ -24,6 +24,9 @@ import { generateVoiceover, getVoiceForMood } from "./services/murf";
 import { searchBackgroundMusic } from "./services/freesound";
 import { renderVideo, getAudioDuration, recalculateMediaTimestamps } from "./services/videoRenderer";
 import { supabase } from "./lib/supabase";
+import { getAuthUrl, exchangeCodeForTokens, getChannelAnalytics, uploadVideoToYoutube } from "./services/youtube";
+import { generateChannelInsights } from "./services/youtubeAI";
+import path from "path";
 
 async function saveToHistory(
   userId: string | undefined,
@@ -856,6 +859,291 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error exporting user data:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to export user data" 
+      });
+    }
+  });
+
+  // YouTube OAuth initialization
+  app.post("/api/youtube/auth/init", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const redirectUri = req.body.redirectUri || `${process.env.REPL_URL || 'http://localhost:5000'}/youtube/callback`;
+      const authUrl = getAuthUrl(redirectUri);
+      
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error initializing YouTube OAuth:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to initialize OAuth" 
+      });
+    }
+  });
+
+  // YouTube OAuth callback
+  app.post("/api/youtube/auth/callback", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { code, redirectUri } = req.body;
+      if (!code) {
+        return res.status(400).json({ error: "Authorization code is required" });
+      }
+
+      const existingChannel = await storage.getYoutubeChannelByUserId(userId);
+      if (existingChannel) {
+        await storage.deleteYoutubeChannel(userId);
+      }
+
+      const tokenData = await exchangeCodeForTokens(code, redirectUri);
+      
+      const channel = await storage.createYoutubeChannel({
+        userId,
+        channelId: tokenData.channelInfo.channelId,
+        channelTitle: tokenData.channelInfo.channelTitle,
+        channelDescription: tokenData.channelInfo.channelDescription,
+        thumbnailUrl: tokenData.channelInfo.thumbnailUrl,
+        subscriberCount: tokenData.channelInfo.subscriberCount,
+        videoCount: tokenData.channelInfo.videoCount,
+        viewCount: tokenData.channelInfo.viewCount,
+        accessToken: tokenData.accessToken,
+        refreshToken: tokenData.refreshToken,
+        tokenExpiresAt: tokenData.expiresAt,
+        lastSyncedAt: null,
+      });
+
+      res.json({
+        success: true,
+        channel: {
+          channelId: channel.channelId,
+          channelTitle: channel.channelTitle,
+          subscriberCount: channel.subscriberCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error handling YouTube OAuth callback:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to connect YouTube channel" 
+      });
+    }
+  });
+
+  // Get connected YouTube channel
+  app.get("/api/youtube/channel", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const channel = await storage.getYoutubeChannelByUserId(userId);
+      if (!channel) {
+        return res.status(404).json({ error: "No YouTube channel connected" });
+      }
+
+      res.json({
+        channelId: channel.channelId,
+        channelTitle: channel.channelTitle,
+        channelDescription: channel.channelDescription,
+        thumbnailUrl: channel.thumbnailUrl,
+        subscriberCount: channel.subscriberCount,
+        videoCount: channel.videoCount,
+        viewCount: channel.viewCount,
+        connectedAt: channel.connectedAt,
+      });
+    } catch (error) {
+      console.error("Error getting YouTube channel:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to get channel info" 
+      });
+    }
+  });
+
+  // Disconnect YouTube channel
+  app.delete("/api/youtube/channel", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const deleted = await storage.deleteYoutubeChannel(userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "No YouTube channel connected" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error disconnecting YouTube channel:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to disconnect channel" 
+      });
+    }
+  });
+
+  // Get YouTube channel analytics with AI insights
+  app.get("/api/youtube/analytics", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const channel = await storage.getYoutubeChannelByUserId(userId);
+      if (!channel) {
+        return res.status(404).json({ error: "No YouTube channel connected" });
+      }
+
+      const analyticsData = await getChannelAnalytics(channel);
+      
+      const aiInsights = await generateChannelInsights(analyticsData);
+
+      await storage.updateYoutubeChannel(channel.id, {
+        lastSyncedAt: new Date(),
+        subscriberCount: analyticsData.channelInfo.subscriberCount.toString(),
+        videoCount: analyticsData.channelInfo.videoCount.toString(),
+        viewCount: analyticsData.channelInfo.viewCount.toString(),
+      });
+
+      res.json({
+        ...analyticsData,
+        aiInsights,
+      });
+    } catch (error) {
+      console.error("Error getting YouTube analytics:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to get analytics" 
+      });
+    }
+  });
+
+  // Publish video to YouTube
+  app.post("/api/youtube/publish", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { renderJobId, title, description, thumbnailUrl, tags, categoryId, privacyStatus } = req.body;
+      
+      if (!renderJobId || !title) {
+        return res.status(400).json({ error: "Render job ID and title are required" });
+      }
+
+      const channel = await storage.getYoutubeChannelByUserId(userId);
+      if (!channel) {
+        return res.status(404).json({ error: "No YouTube channel connected" });
+      }
+
+      const renderJob = await storage.getRenderJob(renderJobId);
+      if (!renderJob) {
+        return res.status(404).json({ error: "Render job not found" });
+      }
+
+      if (renderJob.status !== "completed" || !renderJob.videoUrl) {
+        return res.status(400).json({ error: "Video is not ready for upload" });
+      }
+
+      const upload = await storage.createYoutubeUpload({
+        userId,
+        youtubeChannelId: channel.id,
+        youtubeVideoId: null,
+        renderJobId,
+        title,
+        description: description || "",
+        thumbnailUrl: thumbnailUrl || null,
+        status: "uploading",
+        progress: "0",
+        videoUrl: null,
+        publishedAt: null,
+        error: null,
+      });
+
+      const videoPath = path.join(process.cwd(), "output", `${renderJobId}.mp4`);
+
+      uploadVideoToYoutube(channel, videoPath, {
+        title,
+        description: description || "",
+        tags: tags || [],
+        categoryId: categoryId || "22",
+        privacyStatus: privacyStatus || "public",
+      }).then(async (result) => {
+        await storage.updateYoutubeUpload(upload.id, {
+          status: "completed",
+          progress: "100",
+          youtubeVideoId: result.videoId,
+          videoUrl: result.videoUrl,
+          publishedAt: new Date(),
+        });
+      }).catch(async (error) => {
+        console.error("Error uploading to YouTube:", error);
+        await storage.updateYoutubeUpload(upload.id, {
+          status: "failed",
+          error: error.message,
+        });
+      });
+
+      res.json({
+        uploadId: upload.id,
+        status: "uploading",
+      });
+    } catch (error) {
+      console.error("Error publishing to YouTube:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to publish video" 
+      });
+    }
+  });
+
+  // Get YouTube upload status
+  app.get("/api/youtube/uploads/:uploadId", async (req, res) => {
+    try {
+      const { uploadId } = req.params;
+      const userId = req.header('x-user-id');
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const upload = await storage.getYoutubeUpload(uploadId);
+      if (!upload) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+
+      if (upload.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      res.json(upload);
+    } catch (error) {
+      console.error("Error getting upload status:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to get upload status" 
+      });
+    }
+  });
+
+  // Get all YouTube uploads for user
+  app.get("/api/youtube/uploads", async (req, res) => {
+    try {
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const uploads = await storage.getYoutubeUploadsByUserId(userId);
+      res.json(uploads);
+    } catch (error) {
+      console.error("Error getting uploads:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to get uploads" 
       });
     }
   });

@@ -1,4 +1,14 @@
-import { type User, type InsertUser, type UpdateUserProfile, type RenderVideoRequest, type RenderVideoResponse } from "@shared/schema";
+import { 
+  type User, 
+  type InsertUser, 
+  type UpdateUserProfile, 
+  type RenderVideoRequest, 
+  type RenderVideoResponse,
+  type YoutubeChannel,
+  type InsertYoutubeChannel,
+  type YoutubeUpload,
+  type InsertYoutubeUpload
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 
 // modify the interface with any CRUD methods
@@ -13,15 +23,30 @@ export interface IStorage {
   createRenderJob(request: RenderVideoRequest): Promise<RenderVideoResponse>;
   getRenderJob(jobId: string): Promise<RenderVideoResponse | undefined>;
   updateRenderJob(jobId: string, updates: Partial<RenderVideoResponse>): Promise<RenderVideoResponse | undefined>;
+
+  createYoutubeChannel(channel: InsertYoutubeChannel): Promise<YoutubeChannel>;
+  getYoutubeChannelByUserId(userId: string): Promise<YoutubeChannel | undefined>;
+  getYoutubeChannelById(channelId: string): Promise<YoutubeChannel | undefined>;
+  updateYoutubeChannel(channelId: string, updates: Partial<YoutubeChannel>): Promise<YoutubeChannel | undefined>;
+  deleteYoutubeChannel(userId: string): Promise<boolean>;
+
+  createYoutubeUpload(upload: InsertYoutubeUpload): Promise<YoutubeUpload>;
+  getYoutubeUpload(uploadId: string): Promise<YoutubeUpload | undefined>;
+  updateYoutubeUpload(uploadId: string, updates: Partial<YoutubeUpload>): Promise<YoutubeUpload | undefined>;
+  getYoutubeUploadsByUserId(userId: string): Promise<YoutubeUpload[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private renderJobs: Map<string, RenderVideoResponse>;
+  private youtubeChannels: Map<string, YoutubeChannel>;
+  private youtubeUploads: Map<string, YoutubeUpload>;
 
   constructor() {
     this.users = new Map();
     this.renderJobs = new Map();
+    this.youtubeChannels = new Map();
+    this.youtubeUploads = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -89,6 +114,82 @@ export class MemStorage implements IStorage {
     const updatedJob = { ...job, ...updates };
     this.renderJobs.set(jobId, updatedJob);
     return updatedJob;
+  }
+
+  async createYoutubeChannel(insertChannel: InsertYoutubeChannel): Promise<YoutubeChannel> {
+    const id = randomUUID();
+    const channel: YoutubeChannel = {
+      ...insertChannel,
+      id,
+      connectedAt: new Date(),
+      lastSyncedAt: null,
+    };
+    this.youtubeChannels.set(id, channel);
+    return channel;
+  }
+
+  async getYoutubeChannelByUserId(userId: string): Promise<YoutubeChannel | undefined> {
+    return Array.from(this.youtubeChannels.values()).find(
+      (channel) => channel.userId === userId
+    );
+  }
+
+  async getYoutubeChannelById(channelId: string): Promise<YoutubeChannel | undefined> {
+    return this.youtubeChannels.get(channelId);
+  }
+
+  async updateYoutubeChannel(
+    channelId: string,
+    updates: Partial<YoutubeChannel>
+  ): Promise<YoutubeChannel | undefined> {
+    const channel = this.youtubeChannels.get(channelId);
+    if (!channel) return undefined;
+
+    const updatedChannel = { ...channel, ...updates };
+    this.youtubeChannels.set(channelId, updatedChannel);
+    return updatedChannel;
+  }
+
+  async deleteYoutubeChannel(userId: string): Promise<boolean> {
+    const channel = await this.getYoutubeChannelByUserId(userId);
+    if (!channel) return false;
+
+    this.youtubeChannels.delete(channel.id);
+    return true;
+  }
+
+  async createYoutubeUpload(insertUpload: InsertYoutubeUpload): Promise<YoutubeUpload> {
+    const id = randomUUID();
+    const upload: YoutubeUpload = {
+      ...insertUpload,
+      id,
+      uploadedAt: new Date(),
+      publishedAt: null,
+    };
+    this.youtubeUploads.set(id, upload);
+    return upload;
+  }
+
+  async getYoutubeUpload(uploadId: string): Promise<YoutubeUpload | undefined> {
+    return this.youtubeUploads.get(uploadId);
+  }
+
+  async updateYoutubeUpload(
+    uploadId: string,
+    updates: Partial<YoutubeUpload>
+  ): Promise<YoutubeUpload | undefined> {
+    const upload = this.youtubeUploads.get(uploadId);
+    if (!upload) return undefined;
+
+    const updatedUpload = { ...upload, ...updates };
+    this.youtubeUploads.set(uploadId, updatedUpload);
+    return updatedUpload;
+  }
+
+  async getYoutubeUploadsByUserId(userId: string): Promise<YoutubeUpload[]> {
+    return Array.from(this.youtubeUploads.values()).filter(
+      (upload) => upload.userId === userId
+    );
   }
 }
 

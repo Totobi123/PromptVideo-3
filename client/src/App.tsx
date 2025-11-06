@@ -20,6 +20,9 @@ import Analytics from "@/pages/Analytics";
 import ThumbnailGeneration from "@/pages/ThumbnailGeneration";
 import MyProject from "@/pages/History";
 import Settings from "@/pages/Settings";
+import YoutubeChannel from "@/pages/YoutubeChannel";
+import YoutubeAnalytics from "@/pages/YoutubeAnalytics";
+import YoutubeCallback from "@/pages/YoutubeCallback";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -175,6 +178,31 @@ function Router() {
               <DashboardLayout>
                 <Settings />
               </DashboardLayout>
+            </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/youtube/channel">
+          <AnimatedRoute>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <YoutubeChannel />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/youtube/analytics">
+          <AnimatedRoute>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <YoutubeAnalytics />
+              </DashboardLayout>
+            </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/youtube/callback">
+          <AnimatedRoute>
+            <ProtectedRoute>
+              <YoutubeCallback />
             </ProtectedRoute>
           </AnimatedRoute>
         </Route>
