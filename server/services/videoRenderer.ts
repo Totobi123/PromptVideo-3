@@ -609,6 +609,52 @@ function getTransitionFilter(transitionType: string | undefined): string {
   }
 }
 
+async function concatenateMediaSimple(
+  workDir: string,
+  mediaFiles: DownloadedFile[],
+  outputPath: string,
+  jobId: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const concatListPath = path.join(workDir, 'concat_list.txt');
+    const concatContent = mediaFiles
+      .map(file => `file '${file.path}'`)
+      .join('\n');
+    
+    fs.writeFileSync(concatListPath, concatContent);
+    
+    ffmpeg()
+      .input(concatListPath)
+      .inputOptions(['-f', 'concat', '-safe', '0'])
+      .outputOptions([
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-preset', 'medium',
+        '-crf', '23',
+        '-an'
+      ])
+      .output(outputPath)
+      .on('start', (commandLine) => {
+        console.log(`[${jobId}] FFmpeg simple concat command: ${commandLine}`);
+      })
+      .on('progress', (progress) => {
+        if (progress.percent) {
+          console.log(`[${jobId}] Concat progress: ${progress.percent.toFixed(1)}%`);
+        }
+      })
+      .on('end', () => {
+        console.log(`[${jobId}] Successfully concatenated media files`);
+        resolve();
+      })
+      .on('error', (err, stdout, stderr) => {
+        console.error(`[${jobId}] FFmpeg concat error:`, err.message);
+        console.error(`[${jobId}] stderr:`, stderr);
+        reject(new Error(`Failed to concatenate media: ${err.message}`));
+      })
+      .run();
+  });
+}
+
 async function concatenateMediaWithTransitions(
   workDir: string,
   mediaFiles: DownloadedFile[],
@@ -617,6 +663,11 @@ async function concatenateMediaWithTransitions(
   jobId: string
 ): Promise<void> {
   const TRANSITION_DURATION = 0.8;
+  
+  if (mediaFiles.length > 10) {
+    console.log(`[${jobId}] WARNING: ${mediaFiles.length} media files detected. Using simple concat to avoid memory issues.`);
+    return concatenateMediaSimple(workDir, mediaFiles, outputPath, jobId);
+  }
   
   return new Promise((resolve, reject) => {
     const command = ffmpeg();

@@ -247,10 +247,10 @@ GUIDELINES:
    - Tone: ${categoryGuide.tone}
    - Keywords: ${categoryGuide.keywords}
 
-3. VISUALS: Generate 4-8 media items per segment
+3. VISUALS: Generate 2-3 media items per segment (TOTAL MAX: 8 items for entire video)
    - Mix of videos (60-70%) and images (30-40%)
    - Media Preference: ${categoryGuide.mediaPreference}
-   - Each media item: 3-8 seconds duration
+   - Each media item: 4-10 seconds duration
    - Cover the full segment duration
    - IMPORTANT: For each media item, analyze the content and set "suggestedMediaSource":
      * Use "ai" for: Specific stories, abstract concepts, unique scenarios, detailed characters, fantasy/sci-fi, custom branding, specific emotions/expressions, historical recreations, educational diagrams, or anything requiring precise creative control
