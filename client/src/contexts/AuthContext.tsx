@@ -9,6 +9,11 @@ export interface UserProfile {
   companyName?: string;
   companySize?: string;
   onboardingCompleted?: boolean;
+  hasYoutubeChannel?: string;
+  channelDescription?: string;
+  selectedNiche?: string;
+  channelName?: string;
+  channelLogo?: string;
 }
 
 interface AuthContextType {

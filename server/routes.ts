@@ -7,9 +7,12 @@ import {
   improvePromptRequestSchema,
   suggestDetailsRequestSchema,
   renderVideoRequestSchema,
-  updateUserProfileSchema
+  updateUserProfileSchema,
+  generateChannelNameRequestSchema,
+  generateVideoIdeaRequestSchema,
+  generateThumbnailRequestSchema
 } from "@shared/schema";
-import { generateVideoScript, improvePrompt, suggestDetails } from "./services/openrouter";
+import { generateVideoScript, improvePrompt, suggestDetails, generateChannelName, generateVideoIdea } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
 import { generateAIImage } from "./services/cloudflare-ai";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
@@ -213,6 +216,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating user profile:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to update user profile" 
+      });
+    }
+  });
+
+  // Generate unique channel name and logo based on niche
+  app.post("/api/generate-channel", async (req, res) => {
+    try {
+      const validatedData = generateChannelNameRequestSchema.parse(req.body);
+      
+      const result = await generateChannelName(validatedData.niche);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating channel name:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate channel name" 
+      });
+    }
+  });
+
+  // Generate video idea based on niche
+  app.post("/api/generate-video-idea", async (req, res) => {
+    try {
+      const validatedData = generateVideoIdeaRequestSchema.parse(req.body);
+      
+      const result = await generateVideoIdea(validatedData);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating video idea:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate video idea" 
+      });
+    }
+  });
+
+  // Generate thumbnail
+  app.post("/api/generate-thumbnail", async (req, res) => {
+    try {
+      const validatedData = generateThumbnailRequestSchema.parse(req.body);
+      
+      const thumbnailUrl = await generateAIImage(
+        `YouTube thumbnail: ${validatedData.title}. Style: ${validatedData.style}, professional, eye-catching, high quality`
+      );
+      
+      res.json({ thumbnailUrl: thumbnailUrl.url });
+    } catch (error) {
+      console.error("Error generating thumbnail:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate thumbnail" 
       });
     }
   });

@@ -12,6 +12,11 @@ export const users = pgTable("users", {
   companyName: text("company_name"),
   companySize: text("company_size"),
   onboardingCompleted: text("onboarding_completed").default("false"),
+  hasYoutubeChannel: text("has_youtube_channel"),
+  channelDescription: text("channel_description"),
+  selectedNiche: text("selected_niche"),
+  channelName: text("channel_name"),
+  channelLogo: text("channel_logo"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -25,6 +30,11 @@ export const updateUserProfileSchema = z.object({
   companyName: z.string().optional(),
   companySize: z.string().optional(),
   onboardingCompleted: z.string().optional(),
+  hasYoutubeChannel: z.string().optional(),
+  channelDescription: z.string().optional(),
+  selectedNiche: z.string().optional(),
+  channelName: z.string().optional(),
+  channelLogo: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -241,3 +251,75 @@ export const renderVideoResponseSchema = z.object({
 });
 
 export type RenderVideoResponse = z.infer<typeof renderVideoResponseSchema>;
+
+// Niche-based content generation schemas
+export const YOUTUBE_NICHES = [
+  "Tech Reviews & Tutorials",
+  "Gaming & Esports",
+  "Cooking & Food",
+  "Travel & Adventure",
+  "Fitness & Health",
+  "Beauty & Fashion",
+  "Personal Finance & Investing",
+  "DIY & Crafts",
+  "Music & Entertainment",
+  "Education & Learning",
+  "Vlogging & Lifestyle",
+  "Comedy & Sketches",
+  "Science & Technology",
+  "Business & Entrepreneurship",
+  "Motivation & Self-Help",
+  "Parenting & Family",
+  "Sports & Athletics",
+  "Art & Design",
+  "Photography & Videography",
+  "Gaming Commentary"
+] as const;
+
+export const generateChannelNameRequestSchema = z.object({
+  niche: z.string(),
+});
+
+export type GenerateChannelNameRequest = z.infer<typeof generateChannelNameRequestSchema>;
+
+export const generateChannelNameResponseSchema = z.object({
+  channelName: z.string(),
+  logoUrl: z.string(),
+});
+
+export type GenerateChannelNameResponse = z.infer<typeof generateChannelNameResponseSchema>;
+
+export const generateVideoIdeaRequestSchema = z.object({
+  niche: z.string(),
+  channelDescription: z.string().optional(),
+});
+
+export type GenerateVideoIdeaRequest = z.infer<typeof generateVideoIdeaRequestSchema>;
+
+export const generateVideoIdeaResponseSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  mood: z.string(),
+  audience: z.string(),
+  length: z.number(),
+  seoTitle: z.string(),
+  seoDescription: z.string(),
+  hashtags: z.array(z.string()),
+});
+
+export type GenerateVideoIdeaResponse = z.infer<typeof generateVideoIdeaResponseSchema>;
+
+export const generateThumbnailRequestSchema = z.object({
+  title: z.string(),
+  niche: z.string(),
+  style: z.enum(["bold", "minimal", "dramatic", "colorful"]).default("bold"),
+});
+
+export type GenerateThumbnailRequest = z.infer<typeof generateThumbnailRequestSchema>;
+
+export const generateThumbnailResponseSchema = z.object({
+  thumbnailUrl: z.string(),
+});
+
+export type GenerateThumbnailResponse = z.infer<typeof generateThumbnailResponseSchema>;

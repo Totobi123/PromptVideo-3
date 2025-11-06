@@ -533,3 +533,184 @@ Return ONLY a JSON object with these exact fields, no markdown wrappers:
     throw new Error(`Failed to suggest details: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
+
+export async function generateChannelName(niche: string): Promise<{
+  channelName: string;
+  logoUrl: string;
+}> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are a creative YouTube channel naming expert. Generate a unique, catchy, and memorable channel name based on the given niche. The name should be brandable, easy to remember, and relevant to the niche.
+
+Return ONLY a JSON object with this exact field, no markdown wrappers:
+{
+  "channelName": "Example Channel Name"
+}`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: `Generate a unique and creative YouTube channel name for the niche: ${niche}`,
+          },
+        ],
+        temperature: 0.9,
+        max_tokens: 100,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No channel name received from AI");
+    }
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```json")) {
+      jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+    } else if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/```\n?/g, "");
+    }
+
+    const result = JSON.parse(jsonContent);
+    
+    const { generateAIImage } = await import("./cloudflare-ai");
+    const logoPrompt = `Professional YouTube channel logo for "${result.channelName}", niche: ${niche}, modern, clean, minimalist design, icon-style`;
+    const logo = await generateAIImage(logoPrompt);
+    
+    return {
+      channelName: result.channelName,
+      logoUrl: logo.url,
+    };
+  } catch (error) {
+    console.error("Error generating channel name:", error);
+    throw new Error(`Failed to generate channel name: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+export async function generateVideoIdea(request: {
+  niche: string;
+  channelDescription?: string;
+}): Promise<{
+  title: string;
+  description: string;
+  category: string;
+  mood: string;
+  audience: string;
+  length: number;
+  seoTitle: string;
+  seoDescription: string;
+  hashtags: string[];
+}> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are a YouTube content strategist. Generate a trending, engaging video idea based on the channel's niche. The idea should be creative, timely, and optimized for views and engagement.
+
+Return ONLY a JSON object with these exact fields, no markdown wrappers:
+{
+  "title": "Catchy video title",
+  "description": "Video description/concept",
+  "category": "tech, cooking, travel, education, gaming, fitness, vlog, review, tutorial, entertainment, or gospel",
+  "mood": "happy, casual, sad, promotional, or enthusiastic",
+  "audience": "kids, teens, adults, professionals, or general",
+  "length": 90,
+  "seoTitle": "SEO-optimized title",
+  "seoDescription": "SEO-optimized description",
+  "hashtags": ["tag1", "tag2", "tag3"]
+}`;
+
+  const contextMessage = request.channelDescription 
+    ? `Generate a video idea for a YouTube channel in the "${request.niche}" niche.\n\nChannel context: ${request.channelDescription}`
+    : `Generate a trending video idea for a new YouTube channel in the "${request.niche}" niche.`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: contextMessage,
+          },
+        ],
+        temperature: 0.8,
+        max_tokens: 500,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No video idea received from AI");
+    }
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```json")) {
+      jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+    } else if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/```\n?/g, "");
+    }
+
+    const result = JSON.parse(jsonContent);
+    
+    return {
+      title: result.title,
+      description: result.description,
+      category: result.category,
+      mood: result.mood,
+      audience: result.audience,
+      length: result.length,
+      seoTitle: result.seoTitle,
+      seoDescription: result.seoDescription,
+      hashtags: result.hashtags,
+    };
+  } catch (error) {
+    console.error("Error generating video idea:", error);
+    throw new Error(`Failed to generate video idea: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}

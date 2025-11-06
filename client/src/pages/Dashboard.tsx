@@ -12,6 +12,7 @@ import { VoiceAndMusicInfo } from "@/components/VoiceAndMusicInfo";
 import { SEOPackage } from "@/components/SEOPackage";
 import { ProductionInfo } from "@/components/ProductionInfo";
 import { OnboardingSurvey, type OnboardingData } from "@/components/OnboardingSurvey";
+import { YoutubeChannelOnboarding } from "@/components/YoutubeChannelOnboarding";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -20,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest } from "@/lib/queryClient";
+import type { GenerateChannelNameResponse } from "@shared/schema";
 
 type Step = "prompt" | "details" | "generating" | "results";
 
@@ -77,6 +80,8 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { userProfile, updateUserProfile } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showYoutubeOnboarding, setShowYoutubeOnboarding] = useState(false);
+  const [isGeneratingChannel, setIsGeneratingChannel] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("prompt");
   const [prompt, setPrompt] = useState("");
   const [mood, setMood] = useState("");
@@ -507,12 +512,90 @@ export default function Dashboard() {
     return stepMap[currentStep];
   };
 
-  // Check if onboarding is needed
+  // Check if YouTube and regular onboarding are needed
   useEffect(() => {
-    if (userProfile && !userProfile.onboardingCompleted) {
-      setShowOnboarding(true);
+    if (userProfile) {
+      if (!userProfile.hasYoutubeChannel) {
+        setShowYoutubeOnboarding(true);
+      } else if (!userProfile.onboardingCompleted) {
+        setShowOnboarding(true);
+      }
     }
   }, [userProfile]);
+
+  // Handle YouTube channel onboarding completion
+  const handleYoutubeOnboardingComplete = async (data: {
+    hasYoutubeChannel: string;
+    channelDescription?: string;
+    selectedNiche?: string;
+  }) => {
+    try {
+      setIsGeneratingChannel(true);
+      let channelName = "";
+      let channelLogo = "";
+
+      // If user doesn't have a channel, generate name and logo
+      if (data.hasYoutubeChannel === "no" && data.selectedNiche) {
+        try {
+          const result = await apiRequest<GenerateChannelNameResponse>(
+            "/api/generate-channel",
+            "POST",
+            { niche: data.selectedNiche }
+          );
+          channelName = result.channelName;
+          channelLogo = result.logoUrl;
+        } catch (error) {
+          console.error("Error generating channel:", error);
+          toast({
+            title: "Error",
+            description: "Failed to generate channel name. Please try again.",
+            variant: "destructive",
+          });
+          setIsGeneratingChannel(false);
+          return;
+        }
+      }
+
+      const { error } = await updateUserProfile({
+        hasYoutubeChannel: data.hasYoutubeChannel,
+        channelDescription: data.channelDescription,
+        selectedNiche: data.selectedNiche,
+        channelName: channelName || undefined,
+        channelLogo: channelLogo || undefined,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save channel information. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        setShowYoutubeOnboarding(false);
+        setShowOnboarding(true);
+        if (channelName) {
+          toast({
+            title: `Welcome to ${channelName}!`,
+            description: "Your channel has been created. Let's complete your profile.",
+          });
+        } else {
+          toast({
+            title: "Channel Connected!",
+            description: "Now let's complete your profile.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error completing YouTube onboarding:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save channel information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingChannel(false);
+    }
+  };
 
   // Handle onboarding completion
   const handleOnboardingComplete = async (data: OnboardingData) => {
@@ -646,6 +729,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <YoutubeChannelOnboarding 
+        open={showYoutubeOnboarding} 
+        onComplete={handleYoutubeOnboardingComplete} 
+      />
       <OnboardingSurvey open={showOnboarding} onComplete={handleOnboardingComplete} />
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-8">
