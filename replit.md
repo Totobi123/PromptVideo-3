@@ -16,9 +16,9 @@ Preferred communication style: Simple, everyday language.
 **UI Component System**: shadcn/ui (New York variant) built on Radix UI.
 **Styling**: Tailwind CSS with a custom design system, dark mode default, and a primary red accent.
 **State Management**: React Query for server state; local component state for multi-step forms.
-**Routing**: Wouter for client-side routing, handling public and protected routes (`/`, `/signup`, `/signin`, `/dashboard`).
+**Routing**: Wouter for client-side routing, handling public and protected routes (`/`, `/signup`, `/signin`, `/dashboard`, `/dashboard/my-project`).
 **Form Handling**: React Hook Form with Zod validation.
-**Generation History**: Displays recent generations (scripts, channel names, video ideas, thumbnails) with 2-hour expiration, auto-refreshing every 30 seconds.
+**My Project**: User-specific project dashboard that displays all generations (scripts, channel names, video ideas, thumbnails, audio) with 2-hour expiration, auto-refreshing every 30 seconds. All content is automatically saved to Supabase and accessible across devices.
 
 ### Backend Architecture
 
@@ -30,7 +30,7 @@ Preferred communication style: Simple, everyday language.
 ### System Design Choices
 
 **Supabase Authentication**: Secure user authentication via email/password and Google OAuth.
-**Generation History Storage**: All generations (scripts, channel names, video ideas, thumbnails) are automatically saved to Supabase with 2-hour expiration. History is user-specific and queryable by type. Automatic cleanup runs every 5 minutes to remove expired records.
+**My Project Storage**: All generations (scripts, channel names, video ideas, thumbnails, audio) are automatically saved to Supabase with 2-hour expiration. Each generation is tied to the user's account for cross-device access. Content is queryable by type and automatic cleanup runs every 5 minutes to remove expired records.
 **User Onboarding Survey**: First-time users complete a multi-step survey after signup/login that collects use case (social media, blogging, marketing, etc.), user type (student, teacher, company, freelancer, etc.), and conditional company details (name and size if user type is "Company"). Data is stored in Supabase user metadata and the survey only appears once per user.
 **Multi-Step Form Flow**: Guides users through script generation (prompt → details → generating → results).
 **Real-time Media Fetching**: Fetches fresh media URLs from Pexels during script generation to ensure availability.
