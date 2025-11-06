@@ -51,10 +51,18 @@ Preferred communication style: Simple, everyday language.
 **User Settings & Preferences**: Centralized settings management allowing users to:
   - Configure browser and email notifications for video generation completion
   - Set default preferences (mood, pace, category, media source, aspect ratio) that auto-populate in generation forms
-  - View YouTube channel connection status
+  - View YouTube channel connection status and connect/disconnect YouTube channels
   - Export all user data and generation history in JSON format
   - Manage account settings including account deletion
   - All settings are stored in the users table and synced across devices via Supabase
+**YouTube Integration**: Full YouTube channel integration with OAuth 2.0 authentication allowing users to:
+  - Connect their YouTube channels via Google OAuth with secure credential management
+  - View real-time channel statistics (subscribers, videos, total views) and connection status
+  - Access quick insights including average views per video and subscriber-to-video ratio
+  - Navigate to AI-powered analytics for detailed channel performance insights and recommendations
+  - Upload rendered videos directly to YouTube from the results page with customizable metadata (title, description, privacy settings)
+  - Automatically disconnect and clean up channel data when needed
+  - All YouTube credentials are stored securely in Replit Secrets (YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
 
 ## External Dependencies
 
