@@ -13,19 +13,21 @@ import { SEOPackage } from "@/components/SEOPackage";
 import { ProductionInfo } from "@/components/ProductionInfo";
 import { OnboardingSurvey, type OnboardingData } from "@/components/OnboardingSurvey";
 import { YoutubeChannelOnboarding } from "@/components/YoutubeChannelOnboarding";
+import { YoutubeUploadDialog } from "@/components/YoutubeUploadDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard, Bell, BellOff } from "lucide-react";
+import { Sparkles, RefreshCw, AlertCircle, Video, Download, Keyboard, Bell, BellOff, Youtube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { GenerateChannelNameResponse } from "@shared/schema";
 import { renderManager } from "@/lib/renderManager";
 import { requestNotificationPermission, hasNotificationPermission, isNotificationSupported } from "@/lib/notifications";
+import { useQuery } from "@tanstack/react-query";
 
 type Step = "prompt" | "details" | "generating" | "results";
 
@@ -85,6 +87,7 @@ export default function TextToVideo() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showYoutubeOnboarding, setShowYoutubeOnboarding] = useState(false);
   const [isGeneratingChannel, setIsGeneratingChannel] = useState(false);
+  const [showYoutubeUpload, setShowYoutubeUpload] = useState(false);
   const sessionKey = "video-session";
   const [currentStep, setCurrentStep] = useLocalStorage<Step>("video-current-step", "prompt", 2, sessionKey);
   const [prompt, setPrompt] = useLocalStorage("video-prompt", "", 2, sessionKey);
@@ -1101,15 +1104,26 @@ export default function TextToVideo() {
                         Render Final Video
                       </h3>
                       {videoUrl && (
-                        <Button
-                          data-testid="button-download-video"
-                          onClick={handleDownloadVideo}
-                          variant="outline"
-                          className="gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download Video
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            data-testid="button-upload-youtube"
+                            onClick={() => setShowYoutubeUpload(true)}
+                            variant="default"
+                            className="gap-2"
+                          >
+                            <Youtube className="w-4 h-4" />
+                            Upload to YouTube
+                          </Button>
+                          <Button
+                            data-testid="button-download-video"
+                            onClick={handleDownloadVideo}
+                            variant="outline"
+                            className="gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download Video
+                          </Button>
+                        </div>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -1194,6 +1208,14 @@ export default function TextToVideo() {
           )}
         </AnimatePresence>
       </main>
+
+      <YoutubeUploadDialog
+        open={showYoutubeUpload}
+        onOpenChange={setShowYoutubeUpload}
+        renderJobId={renderJobId}
+        defaultTitle={prompt || ""}
+        defaultDescription={seoPackage?.description || ""}
+      />
     </div>
   );
 }
