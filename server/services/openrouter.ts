@@ -726,3 +726,211 @@ Return ONLY a JSON object with these exact fields, no markdown wrappers:
     throw new Error(`Failed to generate video idea: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
+
+export async function generateNicheSuggestions(request: {
+  userInterests?: string;
+  useCase?: string;
+}): Promise<{ niches: string[] }> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are a YouTube content strategist. Generate personalized niche suggestions based on user interests and use case. The niches should be specific, trending, and have good growth potential.
+
+Return ONLY a JSON object with this exact field, no markdown wrappers:
+{
+  "niches": ["Niche 1", "Niche 2", "Niche 3", "Niche 4", "Niche 5", "Niche 6", "Niche 7", "Niche 8"]
+}`;
+
+  const contextMessage = request.userInterests || request.useCase
+    ? `Generate 8 personalized YouTube niche suggestions.\n${request.userInterests ? `User interests: ${request.userInterests}\n` : ''}${request.useCase ? `Use case: ${request.useCase}` : ''}`
+    : `Generate 8 trending YouTube niche suggestions with good growth potential.`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: contextMessage,
+          },
+        ],
+        temperature: 0.8,
+        max_tokens: 300,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No niche suggestions received from AI");
+    }
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```json")) {
+      jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+    } else if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/```\n?/g, "");
+    }
+
+    const result = JSON.parse(jsonContent);
+    return result;
+  } catch (error) {
+    console.error("Error generating niche suggestions:", error);
+    throw new Error(`Failed to generate niche suggestions: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+export async function explainNiche(niche: string): Promise<{ explanation: string }> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are a YouTube content advisor. Provide a clear, concise explanation of a YouTube niche, including what type of content it involves, who the audience is, and why it's popular. Keep it to 2-3 sentences.
+
+Return ONLY a JSON object with this exact field, no markdown wrappers:
+{
+  "explanation": "Clear explanation of the niche"
+}`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: `Explain the "${niche}" niche for YouTube content creation.`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 200,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No explanation received from AI");
+    }
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```json")) {
+      jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+    } else if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/```\n?/g, "");
+    }
+
+    const result = JSON.parse(jsonContent);
+    return result;
+  } catch (error) {
+    console.error("Error explaining niche:", error);
+    throw new Error(`Failed to explain niche: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+export async function generateChannelNameList(niche: string, count: number = 5): Promise<{ channelNames: string[] }> {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const systemPrompt = `You are a creative YouTube channel naming expert. Generate multiple unique, catchy, and memorable channel names based on the given niche. The names should be brandable, easy to remember, and relevant to the niche.
+
+Return ONLY a JSON object with this exact field, no markdown wrappers:
+{
+  "channelNames": ["Name 1", "Name 2", "Name 3", "Name 4", "Name 5"]
+}`;
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://tivideo.replit.app",
+        "X-Title": "Tivideo",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: `Generate ${count} unique and creative YouTube channel names for the niche: ${niche}`,
+          },
+        ],
+        temperature: 0.9,
+        max_tokens: 200,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No channel names received from AI");
+    }
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```json")) {
+      jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+    } else if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/```\n?/g, "");
+    }
+
+    const result = JSON.parse(jsonContent);
+    return result;
+  } catch (error) {
+    console.error("Error generating channel name list:", error);
+    throw new Error(`Failed to generate channel name list: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}

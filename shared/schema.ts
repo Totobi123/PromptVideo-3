@@ -278,6 +278,31 @@ export const YOUTUBE_NICHES = [
   "Gaming Commentary"
 ] as const;
 
+export const generateNicheSuggestionsRequestSchema = z.object({
+  userInterests: z.string().optional(),
+  useCase: z.string().optional(),
+});
+
+export type GenerateNicheSuggestionsRequest = z.infer<typeof generateNicheSuggestionsRequestSchema>;
+
+export const generateNicheSuggestionsResponseSchema = z.object({
+  niches: z.array(z.string()),
+});
+
+export type GenerateNicheSuggestionsResponse = z.infer<typeof generateNicheSuggestionsResponseSchema>;
+
+export const explainNicheRequestSchema = z.object({
+  niche: z.string(),
+});
+
+export type ExplainNicheRequest = z.infer<typeof explainNicheRequestSchema>;
+
+export const explainNicheResponseSchema = z.object({
+  explanation: z.string(),
+});
+
+export type ExplainNicheResponse = z.infer<typeof explainNicheResponseSchema>;
+
 export const generateChannelNameRequestSchema = z.object({
   niche: z.string(),
 });
@@ -290,6 +315,19 @@ export const generateChannelNameResponseSchema = z.object({
 });
 
 export type GenerateChannelNameResponse = z.infer<typeof generateChannelNameResponseSchema>;
+
+export const generateChannelNameListRequestSchema = z.object({
+  niche: z.string(),
+  count: z.number().default(5),
+});
+
+export type GenerateChannelNameListRequest = z.infer<typeof generateChannelNameListRequestSchema>;
+
+export const generateChannelNameListResponseSchema = z.object({
+  channelNames: z.array(z.string()),
+});
+
+export type GenerateChannelNameListResponse = z.infer<typeof generateChannelNameListResponseSchema>;
 
 export const generateVideoIdeaRequestSchema = z.object({
   niche: z.string(),

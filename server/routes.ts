@@ -9,11 +9,14 @@ import {
   renderVideoRequestSchema,
   updateUserProfileSchema,
   generateChannelNameRequestSchema,
+  generateNicheSuggestionsRequestSchema,
+  explainNicheRequestSchema,
+  generateChannelNameListRequestSchema,
   generateVideoIdeaRequestSchema,
   generateThumbnailRequestSchema,
   getHistoryRequestSchema
 } from "@shared/schema";
-import { generateVideoScript, improvePrompt, suggestDetails, generateChannelName, generateVideoIdea } from "./services/openrouter";
+import { generateVideoScript, improvePrompt, suggestDetails, generateChannelName, generateNicheSuggestions, explainNiche, generateChannelNameList, generateVideoIdea } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
 import { generateAIImage } from "./services/cloudflare-ai";
 import { generateVoiceover, getVoiceForMood } from "./services/murf";
@@ -317,6 +320,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating channel name:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to generate channel name" 
+      });
+    }
+  });
+
+  app.post("/api/generate-niche-suggestions", async (req, res) => {
+    try {
+      const validatedData = generateNicheSuggestionsRequestSchema.parse(req.body);
+      
+      const result = await generateNicheSuggestions(validatedData);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating niche suggestions:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate niche suggestions" 
+      });
+    }
+  });
+
+  app.post("/api/explain-niche", async (req, res) => {
+    try {
+      const validatedData = explainNicheRequestSchema.parse(req.body);
+      
+      const result = await explainNiche(validatedData.niche);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error explaining niche:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to explain niche" 
+      });
+    }
+  });
+
+  app.post("/api/generate-channel-name-list", async (req, res) => {
+    try {
+      const validatedData = generateChannelNameListRequestSchema.parse(req.body);
+      
+      const result = await generateChannelNameList(validatedData.niche, validatedData.count);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating channel name list:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to generate channel name list" 
       });
     }
   });
