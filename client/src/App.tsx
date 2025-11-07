@@ -23,6 +23,8 @@ import Settings from "@/pages/Settings";
 import YoutubeChannel from "@/pages/YoutubeChannel";
 import YoutubeAnalytics from "@/pages/YoutubeAnalytics";
 import YoutubeCallback from "@/pages/YoutubeCallback";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -204,6 +206,16 @@ function Router() {
             <ProtectedRoute>
               <YoutubeCallback />
             </ProtectedRoute>
+          </AnimatedRoute>
+        </Route>
+        <Route path="/privacy">
+          <AnimatedRoute>
+            <PrivacyPolicy />
+          </AnimatedRoute>
+        </Route>
+        <Route path="/terms">
+          <AnimatedRoute>
+            <TermsOfService />
           </AnimatedRoute>
         </Route>
         <Route>

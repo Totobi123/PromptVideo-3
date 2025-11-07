@@ -123,7 +123,16 @@ export default function Landing() {
       <footer className="border-t py-8">
         <div className="container mx-auto px-4">
           <div className="text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Tivideo. All rights reserved.</p>
+            <p className="mb-2">&copy; 2025 Tivideo. All rights reserved.</p>
+            <div className="flex justify-center gap-4">
+              <Link href="/privacy" className="hover:text-foreground transition-colors" data-testid="link-privacy">
+                Privacy Policy
+              </Link>
+              <span>•</span>
+              <Link href="/terms" className="hover:text-foreground transition-colors" data-testid="link-terms">
+                Terms of Service
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
