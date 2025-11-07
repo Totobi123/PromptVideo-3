@@ -7,9 +7,15 @@ import {
   type YoutubeChannel,
   type InsertYoutubeChannel,
   type YoutubeUpload,
-  type InsertYoutubeUpload
+  type InsertYoutubeUpload,
+  users,
+  renderJobs,
+  youtubeChannels,
+  youtubeUploads
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -36,161 +42,168 @@ export interface IStorage {
   getYoutubeUploadsByUserId(userId: string): Promise<YoutubeUpload[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private renderJobs: Map<string, RenderVideoResponse>;
-  private youtubeChannels: Map<string, YoutubeChannel>;
-  private youtubeUploads: Map<string, YoutubeUpload>;
-
-  constructor() {
-    this.users = new Map();
-    this.renderJobs = new Map();
-    this.youtubeChannels = new Map();
-    this.youtubeUploads = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { 
-      ...insertUser, 
-      id,
-      howFoundUs: null,
-      useCase: null,
-      userType: null,
-      companyName: null,
-      companySize: null,
-      onboardingCompleted: "false",
-      hasYoutubeChannel: null,
-      channelDescription: null,
-      selectedNiche: null,
-      channelName: null,
-      channelLogo: null,
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async updateUserProfile(userId: string, profile: UpdateUserProfile): Promise<User | undefined> {
-    const user = this.users.get(userId);
-    if (!user) return undefined;
-    
-    const updatedUser: User = { ...user, ...profile };
-    this.users.set(userId, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(profile)
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
   }
 
   async createRenderJob(request: RenderVideoRequest): Promise<RenderVideoResponse> {
     const jobId = randomUUID();
-    const job: RenderVideoResponse = {
+    await db.insert(renderJobs).values({
+      jobId,
+      status: "queued",
+      progress: "0",
+      requestData: request as any,
+    });
+    
+    return {
       jobId,
       status: "queued",
       progress: 0,
     };
-    this.renderJobs.set(jobId, job);
-    return job;
   }
 
   async getRenderJob(jobId: string): Promise<RenderVideoResponse | undefined> {
-    return this.renderJobs.get(jobId);
+    const [job] = await db.select().from(renderJobs).where(eq(renderJobs.jobId, jobId));
+    if (!job) return undefined;
+    
+    return {
+      jobId: job.jobId,
+      status: job.status,
+      progress: parseInt(job.progress),
+      videoUrl: job.videoUrl || undefined,
+      error: job.error || undefined,
+    };
   }
 
   async updateRenderJob(
     jobId: string,
     updates: Partial<RenderVideoResponse>
   ): Promise<RenderVideoResponse | undefined> {
-    const job = this.renderJobs.get(jobId);
+    const dbUpdates: any = {};
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.progress !== undefined) dbUpdates.progress = updates.progress.toString();
+    if (updates.videoUrl !== undefined) dbUpdates.videoUrl = updates.videoUrl;
+    if (updates.error !== undefined) dbUpdates.error = updates.error;
+    
+    const [job] = await db
+      .update(renderJobs)
+      .set({ ...dbUpdates, updatedAt: new Date() })
+      .where(eq(renderJobs.jobId, jobId))
+      .returning();
+    
     if (!job) return undefined;
     
-    const updatedJob = { ...job, ...updates };
-    this.renderJobs.set(jobId, updatedJob);
-    return updatedJob;
+    return {
+      jobId: job.jobId,
+      status: job.status,
+      progress: parseInt(job.progress),
+      videoUrl: job.videoUrl || undefined,
+      error: job.error || undefined,
+    };
   }
 
   async createYoutubeChannel(insertChannel: InsertYoutubeChannel): Promise<YoutubeChannel> {
-    const id = randomUUID();
-    const channel: YoutubeChannel = {
-      ...insertChannel,
-      id,
-      connectedAt: new Date(),
-      lastSyncedAt: null,
-    };
-    this.youtubeChannels.set(id, channel);
+    const [channel] = await db
+      .insert(youtubeChannels)
+      .values(insertChannel)
+      .returning();
     return channel;
   }
 
   async getYoutubeChannelByUserId(userId: string): Promise<YoutubeChannel | undefined> {
-    return Array.from(this.youtubeChannels.values()).find(
-      (channel) => channel.userId === userId
-    );
+    const [channel] = await db
+      .select()
+      .from(youtubeChannels)
+      .where(eq(youtubeChannels.userId, userId));
+    return channel || undefined;
   }
 
   async getYoutubeChannelById(channelId: string): Promise<YoutubeChannel | undefined> {
-    return this.youtubeChannels.get(channelId);
+    const [channel] = await db
+      .select()
+      .from(youtubeChannels)
+      .where(eq(youtubeChannels.id, channelId));
+    return channel || undefined;
   }
 
   async updateYoutubeChannel(
     channelId: string,
     updates: Partial<YoutubeChannel>
   ): Promise<YoutubeChannel | undefined> {
-    const channel = this.youtubeChannels.get(channelId);
-    if (!channel) return undefined;
-
-    const updatedChannel = { ...channel, ...updates };
-    this.youtubeChannels.set(channelId, updatedChannel);
-    return updatedChannel;
+    const [channel] = await db
+      .update(youtubeChannels)
+      .set(updates)
+      .where(eq(youtubeChannels.id, channelId))
+      .returning();
+    return channel || undefined;
   }
 
   async deleteYoutubeChannel(userId: string): Promise<boolean> {
-    const channel = await this.getYoutubeChannelByUserId(userId);
-    if (!channel) return false;
-
-    this.youtubeChannels.delete(channel.id);
-    return true;
+    const result = await db
+      .delete(youtubeChannels)
+      .where(eq(youtubeChannels.userId, userId))
+      .returning();
+    return result.length > 0;
   }
 
   async createYoutubeUpload(insertUpload: InsertYoutubeUpload): Promise<YoutubeUpload> {
-    const id = randomUUID();
-    const upload: YoutubeUpload = {
-      ...insertUpload,
-      id,
-      uploadedAt: new Date(),
-      publishedAt: null,
-    };
-    this.youtubeUploads.set(id, upload);
+    const [upload] = await db
+      .insert(youtubeUploads)
+      .values(insertUpload)
+      .returning();
     return upload;
   }
 
   async getYoutubeUpload(uploadId: string): Promise<YoutubeUpload | undefined> {
-    return this.youtubeUploads.get(uploadId);
+    const [upload] = await db
+      .select()
+      .from(youtubeUploads)
+      .where(eq(youtubeUploads.id, uploadId));
+    return upload || undefined;
   }
 
   async updateYoutubeUpload(
     uploadId: string,
     updates: Partial<YoutubeUpload>
   ): Promise<YoutubeUpload | undefined> {
-    const upload = this.youtubeUploads.get(uploadId);
-    if (!upload) return undefined;
-
-    const updatedUpload = { ...upload, ...updates };
-    this.youtubeUploads.set(uploadId, updatedUpload);
-    return updatedUpload;
+    const [upload] = await db
+      .update(youtubeUploads)
+      .set(updates)
+      .where(eq(youtubeUploads.id, uploadId))
+      .returning();
+    return upload || undefined;
   }
 
   async getYoutubeUploadsByUserId(userId: string): Promise<YoutubeUpload[]> {
-    return Array.from(this.youtubeUploads.values()).filter(
-      (upload) => upload.userId === userId
-    );
+    return await db
+      .select()
+      .from(youtubeUploads)
+      .where(eq(youtubeUploads.userId, userId));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

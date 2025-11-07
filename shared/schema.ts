@@ -514,6 +514,26 @@ export const insertYoutubeUploadSchema = createInsertSchema(youtubeUploads).omit
 export type InsertYoutubeUpload = z.infer<typeof insertYoutubeUploadSchema>;
 export type YoutubeUpload = typeof youtubeUploads.$inferSelect;
 
+// Render jobs tracking
+export const renderJobs = pgTable("render_jobs", {
+  jobId: varchar("job_id").primaryKey(),
+  status: text("status").notNull().default("queued"),
+  progress: text("progress").notNull().default("0"),
+  videoUrl: text("video_url"),
+  error: text("error"),
+  requestData: jsonb("request_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertRenderJobSchema = createInsertSchema(renderJobs).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRenderJob = z.infer<typeof insertRenderJobSchema>;
+export type RenderJob = typeof renderJobs.$inferSelect;
+
 // YouTube OAuth and analytics schemas
 export const youtubeOAuthInitRequestSchema = z.object({
   redirectUri: z.string().url(),
