@@ -30,10 +30,13 @@ export default function YoutubeCallback() {
     const handleCallback = async () => {
       try {
         const redirectUri = `${window.location.origin}/youtube/callback`;
-        await apiRequest("/api/youtube/auth/callback", "POST", {
+        const channelData = await apiRequest("/api/youtube/auth/callback", "POST", {
           code,
           redirectUri,
         });
+
+        localStorage.setItem('youtube_channel_connected', 'true');
+        localStorage.setItem('youtube_channel_data', JSON.stringify(channelData));
 
         setStatus("success");
         setMessage("Successfully connected your YouTube channel!");

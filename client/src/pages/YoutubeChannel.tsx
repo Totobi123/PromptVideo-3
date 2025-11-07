@@ -62,6 +62,8 @@ export default function YoutubeChannel() {
       return await apiRequest("/api/youtube/channel", "DELETE");
     },
     onSuccess: () => {
+      localStorage.removeItem('youtube_channel_connected');
+      localStorage.removeItem('youtube_channel_data');
       queryClient.invalidateQueries({ queryKey: ["/api/youtube/channel"] });
       toast({
         title: "Disconnected",
