@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -44,6 +44,13 @@ export function YoutubeUploadDialog({
   const [title, setTitle] = useState(defaultTitle);
   const [description, setDescription] = useState(defaultDescription);
   const [privacyStatus, setPrivacyStatus] = useState<"public" | "private" | "unlisted">("public");
+
+  useEffect(() => {
+    if (open) {
+      setTitle(defaultTitle);
+      setDescription(defaultDescription);
+    }
+  }, [open, defaultTitle, defaultDescription]);
 
   const { data: youtubeChannel, isLoading: channelLoading } = useQuery<{
     channelId: string;

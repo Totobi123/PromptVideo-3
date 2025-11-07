@@ -1213,7 +1213,7 @@ export default function TextToVideo() {
         open={showYoutubeUpload}
         onOpenChange={setShowYoutubeUpload}
         renderJobId={renderJobId}
-        defaultTitle={prompt || ""}
+        defaultTitle={seoPackage?.title || prompt || ""}
         defaultDescription={seoPackage?.description || ""}
       />
     </div>
