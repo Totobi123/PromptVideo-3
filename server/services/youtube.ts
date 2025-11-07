@@ -48,7 +48,7 @@ export async function exchangeCodeForTokens(code: string, redirectUri: string) {
   return {
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
-    expiresAt: new Date(Date.now() + (tokens.expiry_date || 3600) * 1000),
+    expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : new Date(Date.now() + 3600 * 1000),
     channelInfo: {
       channelId: channel.id,
       channelTitle: channel.snippet?.title || "",
@@ -77,7 +77,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
 
   return {
     accessToken: credentials.access_token,
-    expiresAt: new Date(Date.now() + (credentials.expiry_date || 3600) * 1000),
+    expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : new Date(Date.now() + 3600 * 1000),
   };
 }
 
