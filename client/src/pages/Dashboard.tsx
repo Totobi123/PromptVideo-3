@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { Video, FileText, Mic, BarChart3, Image as ImageIcon, ArrowRight } from "lucide-react";
+import { Video, FileText, Mic, BarChart3, Image as ImageIcon, ArrowRight, Settings as SettingsIcon } from "lucide-react";
 
 const tools = [
   {
@@ -64,39 +64,48 @@ export default function Dashboard() {
               Choose a tool to get started creating amazing content
             </p>
           </div>
-          <Card className="min-w-[280px]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Account Info
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" data-testid="text-email">
-                    {user?.email}
-                  </p>
-                  {userProfile?.userType && (
-                    <Badge variant="secondary" className="mt-1">
-                      {userProfile.userType}
-                    </Badge>
-                  )}
+          <Link href="/dashboard/settings">
+            <Card className="min-w-[280px] hover-elevate active-elevate-2 cursor-pointer transition-all" data-testid="card-account-info">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Account Info
+                  </CardTitle>
+                  <SettingsIcon className="w-4 h-4 text-muted-foreground" />
                 </div>
-              </div>
-              {userProfile?.selectedNiche && (
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">Niche</p>
-                  <p className="text-sm font-medium" data-testid="text-niche">
-                    {userProfile.selectedNiche}
-                  </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={user?.user_metadata?.avatar_url} />
+                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" data-testid="text-email">
+                      {user?.email}
+                    </p>
+                    {userProfile?.userType && (
+                      <Badge variant="secondary" className="mt-1">
+                        {userProfile.userType}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                {userProfile?.selectedNiche && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground">Niche</p>
+                    <p className="text-sm font-medium" data-testid="text-niche">
+                      {userProfile.selectedNiche}
+                    </p>
+                  </div>
+                )}
+                <Button variant="ghost" size="sm" className="w-full" data-testid="button-edit-profile">
+                  <SettingsIcon className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <div className="space-y-4">
