@@ -62,7 +62,8 @@ Preferred communication style: Simple, everyday language.
   - Navigate to AI-powered analytics for detailed channel performance insights and recommendations
   - Upload rendered videos directly to YouTube from the results page with customizable metadata (title, description, privacy settings)
   - Automatically disconnect and clean up channel data when needed
-  - All YouTube credentials are stored securely in Replit Secrets (YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+  - All YouTube credentials are stored securely in Replit Secrets (YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
+  - Note: Using manual YouTube OAuth credentials instead of Replit YouTube integration (user dismissed integration setup)
 
 ## External Dependencies
 

@@ -2,13 +2,17 @@ import { google } from "googleapis";
 import type { YoutubeChannel } from "@shared/schema";
 
 const youtube = google.youtube("v3");
-const oauth2Client = new google.auth.OAuth2(
-  process.env.YOUTUBE_CLIENT_ID,
-  process.env.YOUTUBE_CLIENT_SECRET,
-  process.env.YOUTUBE_REDIRECT_URI
-);
+
+function getOAuth2Client(redirectUri?: string) {
+  return new google.auth.OAuth2(
+    process.env.YOUTUBE_CLIENT_ID,
+    process.env.YOUTUBE_CLIENT_SECRET,
+    redirectUri
+  );
+}
 
 export function getAuthUrl(redirectUri: string): string {
+  const oauth2Client = getOAuth2Client(redirectUri);
   const scopes = [
     "https://www.googleapis.com/auth/youtube.readonly",
     "https://www.googleapis.com/auth/youtube.upload",
@@ -25,7 +29,7 @@ export function getAuthUrl(redirectUri: string): string {
 }
 
 export async function exchangeCodeForTokens(code: string, redirectUri: string) {
-  oauth2Client.redirectUri = redirectUri;
+  const oauth2Client = getOAuth2Client(redirectUri);
   const { tokens } = await oauth2Client.getToken(code);
   
   if (!tokens.access_token || !tokens.refresh_token) {
@@ -65,6 +69,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
   accessToken: string;
   expiresAt: Date;
 }> {
+  const oauth2Client = getOAuth2Client();
   oauth2Client.setCredentials({
     refresh_token: refreshToken,
   });
@@ -82,6 +87,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
 }
 
 export async function getChannelAnalytics(channel: YoutubeChannel) {
+  const oauth2Client = getOAuth2Client();
   if (new Date() > new Date(channel.tokenExpiresAt)) {
     const refreshed = await refreshAccessToken(channel.refreshToken);
     oauth2Client.setCredentials({
@@ -179,6 +185,7 @@ export async function uploadVideoToYoutube(
     privacyStatus: "public" | "private" | "unlisted";
   }
 ) {
+  const oauth2Client = getOAuth2Client();
   if (new Date() > new Date(channel.tokenExpiresAt)) {
     const refreshed = await refreshAccessToken(channel.refreshToken);
     oauth2Client.setCredentials({
