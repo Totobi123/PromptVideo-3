@@ -1,49 +1,91 @@
--- Supabase Migration: Generation History Table
--- This table stores user generation history for scripts, channel names, video ideas, and thumbnails
--- Records auto-expire after 2 hours
-
-CREATE TABLE IF NOT EXISTS generation_history (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('script', 'channel_name', 'video_idea', 'thumbnail', 'audio')),
-  prompt TEXT,
-  result JSONB NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  how_found_us TEXT,
+  use_case TEXT,
+  user_type TEXT,
+  company_name TEXT,
+  company_size TEXT,
+  onboarding_completed TEXT DEFAULT 'false',
+  has_youtube_channel TEXT,
+  channel_description TEXT,
+  selected_niche TEXT,
+  channel_name TEXT,
+  channel_logo TEXT,
+  default_mood TEXT,
+  default_pace TEXT,
+  default_category TEXT,
+  default_media_source TEXT,
+  default_aspect_ratio TEXT,
+  notifications_enabled TEXT DEFAULT 'false',
+  email_notifications_enabled TEXT DEFAULT 'false'
 );
 
--- Create index on user_id for faster queries
+-- Create generation_history table
+CREATE TABLE IF NOT EXISTS generation_history (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  prompt TEXT,
+  result JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  expires_at TIMESTAMP NOT NULL
+);
+
+-- Create render_jobs table
+CREATE TABLE IF NOT EXISTS render_jobs (
+  job_id VARCHAR PRIMARY KEY,
+  status TEXT NOT NULL DEFAULT 'queued',
+  progress TEXT NOT NULL DEFAULT '0',
+  video_url TEXT,
+  error TEXT,
+  request_data JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Create youtube_channels table
+CREATE TABLE IF NOT EXISTS youtube_channels (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  channel_id TEXT NOT NULL UNIQUE,
+  channel_title TEXT NOT NULL,
+  channel_description TEXT,
+  thumbnail_url TEXT,
+  subscriber_count TEXT,
+  video_count TEXT,
+  view_count TEXT,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  token_expires_at TIMESTAMP NOT NULL,
+  connected_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  last_synced_at TIMESTAMP
+);
+
+-- Create youtube_uploads table
+CREATE TABLE IF NOT EXISTS youtube_uploads (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  youtube_channel_id TEXT NOT NULL,
+  youtube_video_id TEXT,
+  render_job_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT,
+  thumbnail_url TEXT,
+  status TEXT NOT NULL DEFAULT 'uploading',
+  progress TEXT DEFAULT '0',
+  video_url TEXT,
+  uploaded_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  published_at TIMESTAMP,
+  error TEXT
+);
+
+-- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_generation_history_user_id ON generation_history(user_id);
-
--- Create index on expires_at for faster cleanup queries
-CREATE INDEX IF NOT EXISTS idx_generation_history_expires_at ON generation_history(expires_at);
-
--- Create index on type for filtered queries
 CREATE INDEX IF NOT EXISTS idx_generation_history_type ON generation_history(type);
-
--- Create composite index for common query pattern (user_id + type + expires_at)
-CREATE INDEX IF NOT EXISTS idx_generation_history_user_type_expires 
-ON generation_history(user_id, type, expires_at DESC);
-
--- Enable Row Level Security
-ALTER TABLE generation_history ENABLE ROW LEVEL SECURITY;
-
--- Policy: Users can only read their own history
-CREATE POLICY "Users can view own history" ON generation_history
-  FOR SELECT
-  USING (auth.uid()::text = user_id);
-
--- Policy: Authenticated users can insert their own history
-CREATE POLICY "Users can insert own history" ON generation_history
-  FOR INSERT
-  WITH CHECK (auth.uid()::text = user_id);
-
--- Policy: Users can delete their own history
-CREATE POLICY "Users can delete own history" ON generation_history
-  FOR DELETE
-  USING (auth.uid()::text = user_id);
-
-COMMENT ON TABLE generation_history IS 'Stores user generation history with 2-hour expiration';
-COMMENT ON COLUMN generation_history.type IS 'Type of generation: script, channel_name, video_idea, thumbnail, or audio';
-COMMENT ON COLUMN generation_history.result IS 'JSON result from the generation endpoint';
-COMMENT ON COLUMN generation_history.expires_at IS 'When this history record should be deleted (2 hours from creation)';
+CREATE INDEX IF NOT EXISTS idx_generation_history_expires_at ON generation_history(expires_at);
+CREATE INDEX IF NOT EXISTS idx_youtube_channels_user_id ON youtube_channels(user_id);
+CREATE INDEX IF NOT EXISTS idx_youtube_uploads_user_id ON youtube_uploads(user_id);
+CREATE INDEX IF NOT EXISTS idx_youtube_uploads_youtube_channel_id ON youtube_uploads(youtube_channel_id);
