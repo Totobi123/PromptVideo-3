@@ -871,7 +871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const redirectUri = req.body.redirectUri || `${process.env.REPL_URL || 'http://localhost:5000'}/youtube/callback`;
+      const redirectUri = req.body.redirectUri || `${process.env.APP_URL || 'http://localhost:5000'}/youtube/callback`;
       const authUrl = getAuthUrl(redirectUri);
       
       res.json({ authUrl });
