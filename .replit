@@ -67,9 +67,5 @@ externalPort = 3000
 localPort = 44283
 externalPort = 3003
 
-[[ports]]
-localPort = 44381
-externalPort = 6000
-
 [agent]
 integrations = ["javascript_database:1.0.0"]
