@@ -12,18 +12,31 @@ import {
   MessageSquare,
   Loader2,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Target,
+  Clock
 } from "lucide-react";
 import { useLocation } from "wouter";
 import type { YoutubeAnalyticsResponse } from "@shared/schema";
+import { useEffect, useState } from "react";
 
 export default function YoutubeAnalytics() {
   const [, setLocation] = useLocation();
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  const { data, isLoading, error } = useQuery<YoutubeAnalyticsResponse>({
+  const { data, isLoading, error, refetch } = useQuery<YoutubeAnalyticsResponse>({
     queryKey: ["/api/youtube/analytics"],
     retry: false,
   });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+      setLastRefresh(new Date());
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -64,16 +77,72 @@ export default function YoutubeAnalytics() {
     return null;
   }
 
+  const handleManualRefresh = () => {
+    refetch();
+    setLastRefresh(new Date());
+  };
+
+  const getTimeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ago`;
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">YouTube Analytics</h1>
-        <p className="text-muted-foreground" data-testid="text-page-description">
-          AI-powered insights for {data.channelInfo.title}
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">YouTube Analytics</h1>
+          <p className="text-muted-foreground" data-testid="text-page-description">
+            AI-powered insights for {data.channelInfo.title}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            <span>{getTimeAgo(lastRefresh)}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualRefresh}
+            data-testid="button-refresh-analytics"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-primary" />
+              What to Do Next
+            </CardTitle>
+            <CardDescription>
+              Prioritized actions based on your channel's current state
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.aiInsights.recommendations.slice(0, 3).map((recommendation, index) => (
+              <div key={index} className="flex items-start gap-3 p-3 bg-card rounded-lg border" data-testid={`action-item-${index}`}>
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex-shrink-0">
+                  {index + 1}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{recommendation}</p>
+                  <Badge variant="outline" className="mt-2">
+                    {index === 0 ? 'High Priority' : index === 1 ? 'Medium Priority' : 'Important'}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
         <div className="grid md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
