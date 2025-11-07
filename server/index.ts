@@ -1,8 +1,5 @@
 import dotenv from "dotenv";
-const result = dotenv.config();
-console.log("Dotenv loaded:", result.error ? `ERROR: ${result.error}` : "SUCCESS");
-console.log("SUPABASE_DB_URL:", process.env.SUPABASE_DB_URL ? "SET" : "NOT SET");
-console.log("DATABASE_URL:", process.env.DATABASE_URL ? "SET" : "NOT SET");
+dotenv.config({ override: true });
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
