@@ -239,6 +239,22 @@ Replit provides free hosting with automatic deployments.
 - 3GB persistent storage
 - Shared CPU
 
+## 🔒 Security Warning
+
+**⚠️ NEVER commit your `.env` file to version control!**
+
+Your `.env` file contains sensitive API keys and database credentials. To protect your accounts:
+
+1. Ensure `.env` is in your `.gitignore` file
+2. Never share your `.env` file publicly
+3. Rotate API keys immediately if accidentally exposed
+4. Use environment variables or secrets managers in production
+
+```bash
+# Add to .gitignore if not present
+echo ".env" >> .gitignore
+```
+
 ## 🔧 Troubleshooting
 
 ### Database Connection Errors

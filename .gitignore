@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables (NEVER commit)
+.env
+.env.local
+.env.production
+
+# Output directories
+output/
+temp/
