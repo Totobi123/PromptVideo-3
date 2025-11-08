@@ -15,7 +15,8 @@ import {
   generateVideoIdeaRequestSchema,
   generateThumbnailRequestSchema,
   getHistoryRequestSchema,
-  updateUserSettingsSchema
+  updateUserSettingsSchema,
+  updateApiKeysSchema
 } from "@shared/schema";
 import { generateVideoScript, improvePrompt, suggestDetails, generateChannelName, generateNicheSuggestions, explainNiche, generateChannelNameList, generateVideoIdea } from "./services/openrouter";
 import { searchPexelsMedia } from "./services/pexels";
@@ -26,6 +27,7 @@ import { renderVideo, getAudioDuration, recalculateMediaTimestamps } from "./ser
 import { supabase } from "./lib/supabase";
 import { getAuthUrl, exchangeCodeForTokens, getChannelAnalytics, uploadVideoToYoutube } from "./services/youtube";
 import { generateChannelInsights } from "./services/youtubeAI";
+import { encrypt, decrypt } from "./lib/encryption";
 import path from "path";
 
 async function saveToHistory(
@@ -91,13 +93,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-script", async (req, res) => {
     try {
       const validatedData = generateScriptRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
       console.log("=== GENERATE SCRIPT REQUEST ===");
       console.log("Media Source Selected:", validatedData.mediaSource);
       console.log("===============================");
       
       // Generate script using DeepSeek via OpenRouter
-      const result = await generateVideoScript(validatedData);
+      const result = await generateVideoScript(validatedData, userId);
       
       // Get mood-appropriate voice
       const voiceInfo = getVoiceForMood(validatedData.mood);
@@ -107,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fetch background music, media URLs (stock or AI), and generate audio in parallel
       const [musicInfo, mediaItemsWithUrls, audioUrl] = await Promise.all([
-        searchBackgroundMusic(validatedData.mood),
+        searchBackgroundMusic(validatedData.mood, userId),
         Promise.all(
           result.mediaItems.map(async (item, index) => {
             let media;
@@ -121,11 +124,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (effectiveMediaSource === "ai") {
               console.log(`Generating AI image ${index + 1}/${result.mediaItems.length}: "${item.description}"`);
-              media = await generateAIImage(item.description);
+              media = await generateAIImage(item.description, userId);
               console.log(`AI image ${index + 1} generated:`, media.url ? "SUCCESS" : "FAILED");
             } else {
               console.log(`Fetching stock media ${index + 1}/${result.mediaItems.length}: "${item.description}"`);
-              media = await searchPexelsMedia(item.description, item.type);
+              media = await searchPexelsMedia(item.description, item.type, userId);
             }
             return {
               ...item,
@@ -135,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           })
         ),
-        generateVoiceover(fullScriptText, voiceInfo.voiceId, validatedData.pace, voiceInfo.style),
+        generateVoiceover(fullScriptText, voiceInfo.voiceId, validatedData.pace, voiceInfo.style, userId),
       ]);
 
       // Get actual audio duration and recalculate media timestamps to match
@@ -188,17 +191,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-audio", async (req, res) => {
     try {
       const validatedData = generateAudioRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
       const audioUrl = await generateVoiceover(
         validatedData.text, 
         validatedData.voiceId,
-        validatedData.pace
+        validatedData.pace,
+        undefined,
+        userId
       );
       
       const result = { audioUrl };
       
       await saveToHistory(
-        req.header('x-user-id'),
+        userId,
         'audio',
         validatedData.text.substring(0, 100),
         result
@@ -217,8 +223,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/improve-prompt", async (req, res) => {
     try {
       const validatedData = improvePromptRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const improvedPrompt = await improvePrompt(validatedData.prompt);
+      const improvedPrompt = await improvePrompt(validatedData.prompt, userId);
       
       res.json({ improvedPrompt });
     } catch (error) {
@@ -233,8 +240,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/suggest-details", async (req, res) => {
     try {
       const validatedData = suggestDetailsRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const suggestions = await suggestDetails(validatedData.prompt);
+      const suggestions = await suggestDetails(validatedData.prompt, userId);
       
       res.json(suggestions);
     } catch (error) {
@@ -310,11 +318,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-channel", async (req, res) => {
     try {
       const validatedData = generateChannelNameRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const result = await generateChannelName(validatedData.niche);
+      const result = await generateChannelName(validatedData.niche, userId);
       
       await saveToHistory(
-        req.header('x-user-id'),
+        userId,
         'channel_name',
         validatedData.niche,
         result
@@ -332,8 +341,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-niche-suggestions", async (req, res) => {
     try {
       const validatedData = generateNicheSuggestionsRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const result = await generateNicheSuggestions(validatedData);
+      const result = await generateNicheSuggestions(validatedData, userId);
       
       res.json(result);
     } catch (error) {
@@ -347,8 +357,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/explain-niche", async (req, res) => {
     try {
       const validatedData = explainNicheRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const result = await explainNiche(validatedData.niche);
+      const result = await explainNiche(validatedData.niche, userId);
       
       res.json(result);
     } catch (error) {
@@ -362,8 +373,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-channel-name-list", async (req, res) => {
     try {
       const validatedData = generateChannelNameListRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const result = await generateChannelNameList(validatedData.niche, validatedData.count);
+      const result = await generateChannelNameList(validatedData.niche, validatedData.count, userId);
       
       res.json(result);
     } catch (error) {
@@ -378,11 +390,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-video-idea", async (req, res) => {
     try {
       const validatedData = generateVideoIdeaRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
-      const result = await generateVideoIdea(validatedData);
+      const result = await generateVideoIdea(validatedData, userId);
       
       await saveToHistory(
-        req.header('x-user-id'),
+        userId,
         'video_idea',
         validatedData.niche,
         result
@@ -401,15 +414,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-thumbnail", async (req, res) => {
     try {
       const validatedData = generateThumbnailRequestSchema.parse(req.body);
+      const userId = req.header('x-user-id');
       
       const thumbnailUrl = await generateAIImage(
-        `YouTube thumbnail: ${validatedData.title}. Style: ${validatedData.style}, professional, eye-catching, high quality`
+        `YouTube thumbnail: ${validatedData.title}. Style: ${validatedData.style}, professional, eye-catching, high quality`,
+        userId
       );
       
       const result = { thumbnailUrl: thumbnailUrl.url };
       
       await saveToHistory(
-        req.header('x-user-id'),
+        userId,
         'thumbnail',
         validatedData.title,
         result
@@ -817,6 +832,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating user settings:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to update user settings" 
+      });
+    }
+  });
+
+  app.get("/api/user/api-keys", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(503).json({ error: "Database not available" });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('users')
+        .select('openrouter_api_key, murf_api_key, pexels_api_key, freesound_api_key, cloudflare_api_key, cloudflare_worker_url')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      res.json({
+        openrouterApiKey: decrypt(data?.openrouter_api_key || ''),
+        murfApiKey: decrypt(data?.murf_api_key || ''),
+        pexelsApiKey: decrypt(data?.pexels_api_key || ''),
+        freesoundApiKey: decrypt(data?.freesound_api_key || ''),
+        cloudflareApiKey: decrypt(data?.cloudflare_api_key || ''),
+        cloudflareWorkerUrl: decrypt(data?.cloudflare_worker_url || ''),
+      });
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to fetch API keys" 
+      });
+    }
+  });
+
+  app.patch("/api/user/api-keys", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(503).json({ error: "Database not available" });
+      }
+
+      const userId = req.header('x-user-id');
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const validatedData = updateApiKeysSchema.parse(req.body);
+      
+      const updateData: any = {};
+      if (validatedData.openrouterApiKey !== undefined) updateData.openrouter_api_key = encrypt(validatedData.openrouterApiKey);
+      if (validatedData.murfApiKey !== undefined) updateData.murf_api_key = encrypt(validatedData.murfApiKey);
+      if (validatedData.pexelsApiKey !== undefined) updateData.pexels_api_key = encrypt(validatedData.pexelsApiKey);
+      if (validatedData.freesoundApiKey !== undefined) updateData.freesound_api_key = encrypt(validatedData.freesoundApiKey);
+      if (validatedData.cloudflareApiKey !== undefined) updateData.cloudflare_api_key = encrypt(validatedData.cloudflareApiKey);
+      if (validatedData.cloudflareWorkerUrl !== undefined) updateData.cloudflare_worker_url = encrypt(validatedData.cloudflareWorkerUrl);
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "At least one API key field must be provided" });
+      }
+
+      const { data, error } = await (supabase as any)
+        .from('users')
+        .update(updateData)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      res.json({
+        openrouterApiKey: decrypt(data?.openrouter_api_key || ''),
+        murfApiKey: decrypt(data?.murf_api_key || ''),
+        pexelsApiKey: decrypt(data?.pexels_api_key || ''),
+        freesoundApiKey: decrypt(data?.freesound_api_key || ''),
+        cloudflareApiKey: decrypt(data?.cloudflare_api_key || ''),
+        cloudflareWorkerUrl: decrypt(data?.cloudflare_worker_url || ''),
+      });
+    } catch (error) {
+      console.error("Error updating API keys:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to update API keys" 
       });
     }
   });

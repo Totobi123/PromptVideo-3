@@ -7,9 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Bell, Settings2, Download, Trash2, CheckCircle, XCircle, Youtube, ExternalLink } from "lucide-react";
+import { Bell, Settings2, Download, Trash2, CheckCircle, XCircle, Youtube, ExternalLink, Key, Eye, EyeOff } from "lucide-react";
 import type { UpdateUserSettings } from "@shared/schema";
 import { useLocation } from "wouter";
 
@@ -23,10 +24,21 @@ interface UserSettings {
   emailNotificationsEnabled?: string;
 }
 
+interface ApiKeys {
+  openrouterApiKey?: string;
+  murfApiKey?: string;
+  pexelsApiKey?: string;
+  freesoundApiKey?: string;
+  cloudflareApiKey?: string;
+  cloudflareWorkerUrl?: string;
+}
+
 export default function Settings() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
+  const [localApiKeys, setLocalApiKeys] = useState<ApiKeys>({});
   
   useEffect(() => {
     if ("Notification" in window) {
@@ -54,6 +66,13 @@ export default function Settings() {
         }
         throw error;
       }
+    },
+  });
+
+  const { data: apiKeys, isLoading: apiKeysLoading } = useQuery<ApiKeys>({
+    queryKey: ["/api/user/api-keys"],
+    onSuccess: (data) => {
+      setLocalApiKeys(data);
     },
   });
 
@@ -188,6 +207,40 @@ export default function Settings() {
       });
     },
   });
+
+  const updateApiKeysMutation = useMutation({
+    mutationFn: async (data: ApiKeys) => {
+      return apiRequest("/api/user/api-keys", "PATCH", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/api-keys"] });
+      toast({
+        title: "API Keys saved",
+        description: "Your API keys have been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save API keys",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveApiKeys = () => {
+    updateApiKeysMutation.mutate(localApiKeys);
+  };
+
+  const toggleShowApiKey = (key: string) => {
+    setShowApiKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const maskApiKey = (key: string | undefined) => {
+    if (!key || key.length === 0) return '';
+    if (key.length <= 8) return '•'.repeat(key.length);
+    return key.slice(0, 4) + '•'.repeat(key.length - 8) + key.slice(-4);
+  };
 
   if (isLoading) {
     return (
@@ -406,6 +459,181 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground">
               These defaults will be automatically applied when generating new content. You can always change them for individual generations.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              <CardTitle data-testid="text-api-keys-title">API Keys</CardTitle>
+            </div>
+            <CardDescription>
+              Add your own API keys for external services. Your keys are encrypted and stored securely.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 bg-muted rounded-md">
+              <p className="text-sm text-muted-foreground">
+                By adding your own API keys, you can use your own accounts with these services. This gives you full control over your usage and costs. If you don't add keys, the app will use shared keys (subject to rate limits).
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="openrouter-api-key" data-testid="label-openrouter-api-key">
+                  OpenRouter API Key
+                  <span className="text-xs text-muted-foreground ml-2">(For AI script generation)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="openrouter-api-key"
+                    type={showApiKeys.openrouter ? "text" : "password"}
+                    placeholder="sk-or-v1-..."
+                    value={localApiKeys.openrouterApiKey || ''}
+                    onChange={(e) => setLocalApiKeys(prev => ({ ...prev, openrouterApiKey: e.target.value }))}
+                    data-testid="input-openrouter-api-key"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => toggleShowApiKey('openrouter')}
+                    data-testid="button-toggle-openrouter-key"
+                  >
+                    {showApiKeys.openrouter ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="murf-api-key" data-testid="label-murf-api-key">
+                  Murf.ai API Key
+                  <span className="text-xs text-muted-foreground ml-2">(For text-to-speech)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="murf-api-key"
+                    type={showApiKeys.murf ? "text" : "password"}
+                    placeholder="ap2_..."
+                    value={localApiKeys.murfApiKey || ''}
+                    onChange={(e) => setLocalApiKeys(prev => ({ ...prev, murfApiKey: e.target.value }))}
+                    data-testid="input-murf-api-key"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => toggleShowApiKey('murf')}
+                    data-testid="button-toggle-murf-key"
+                  >
+                    {showApiKeys.murf ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pexels-api-key" data-testid="label-pexels-api-key">
+                  Pexels API Key
+                  <span className="text-xs text-muted-foreground ml-2">(For stock photos/videos)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="pexels-api-key"
+                    type={showApiKeys.pexels ? "text" : "password"}
+                    placeholder="Your Pexels API key"
+                    value={localApiKeys.pexelsApiKey || ''}
+                    onChange={(e) => setLocalApiKeys(prev => ({ ...prev, pexelsApiKey: e.target.value }))}
+                    data-testid="input-pexels-api-key"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => toggleShowApiKey('pexels')}
+                    data-testid="button-toggle-pexels-key"
+                  >
+                    {showApiKeys.pexels ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="freesound-api-key" data-testid="label-freesound-api-key">
+                  FreeSound API Key
+                  <span className="text-xs text-muted-foreground ml-2">(For background music)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="freesound-api-key"
+                    type={showApiKeys.freesound ? "text" : "password"}
+                    placeholder="Your FreeSound API key"
+                    value={localApiKeys.freesoundApiKey || ''}
+                    onChange={(e) => setLocalApiKeys(prev => ({ ...prev, freesoundApiKey: e.target.value }))}
+                    data-testid="input-freesound-api-key"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => toggleShowApiKey('freesound')}
+                    data-testid="button-toggle-freesound-key"
+                  >
+                    {showApiKeys.freesound ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cloudflare-api-key" data-testid="label-cloudflare-api-key">
+                  Cloudflare AI API Key
+                  <span className="text-xs text-muted-foreground ml-2">(For AI image generation)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cloudflare-api-key"
+                    type={showApiKeys.cloudflare ? "text" : "password"}
+                    placeholder="Your Cloudflare API key"
+                    value={localApiKeys.cloudflareApiKey || ''}
+                    onChange={(e) => setLocalApiKeys(prev => ({ ...prev, cloudflareApiKey: e.target.value }))}
+                    data-testid="input-cloudflare-api-key"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => toggleShowApiKey('cloudflare')}
+                    data-testid="button-toggle-cloudflare-key"
+                  >
+                    {showApiKeys.cloudflare ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cloudflare-worker-url" data-testid="label-cloudflare-worker-url">
+                  Cloudflare Worker URL
+                  <span className="text-xs text-muted-foreground ml-2">(Optional, for custom Cloudflare workers)</span>
+                </Label>
+                <Input
+                  id="cloudflare-worker-url"
+                  type="text"
+                  placeholder="https://your-worker.workers.dev"
+                  value={localApiKeys.cloudflareWorkerUrl || ''}
+                  onChange={(e) => setLocalApiKeys(prev => ({ ...prev, cloudflareWorkerUrl: e.target.value }))}
+                  data-testid="input-cloudflare-worker-url"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSaveApiKeys}
+              disabled={updateApiKeysMutation.isPending}
+              data-testid="button-save-api-keys"
+            >
+              {updateApiKeysMutation.isPending ? "Saving..." : "Save API Keys"}
+            </Button>
+
+            <div className="p-4 bg-muted rounded-md">
+              <p className="text-xs text-muted-foreground">
+                🔒 Your API keys are encrypted before being stored in our database. They are never shared with anyone and are only used when you generate content.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

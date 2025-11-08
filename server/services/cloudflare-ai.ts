@@ -1,12 +1,14 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { getUserCloudflareConfig } from "../lib/userApiKeys";
 
-const CLOUDFLARE_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || "https://tivideo.titobisatexam.workers.dev";
-const CLOUDFLARE_API_KEY = process.env.CLOUDFLARE_API_KEY || "12345678";
-
-export async function generateAIImage(prompt: string): Promise<{ url: string; thumbnail: string }> {
+export async function generateAIImage(prompt: string, userId?: string): Promise<{ url: string; thumbnail: string }> {
   try {
+    const userConfig = await getUserCloudflareConfig(userId);
+    const CLOUDFLARE_WORKER_URL = userConfig.workerUrl || process.env.CLOUDFLARE_WORKER_URL || "https://tivideo.titobisatexam.workers.dev";
+    const CLOUDFLARE_API_KEY = userConfig.apiKey || process.env.CLOUDFLARE_API_KEY || "12345678";
+    
     console.log("🎨 Cloudflare AI - Generating image for:", prompt);
     console.log("🔗 Worker URL:", CLOUDFLARE_WORKER_URL);
     console.log("🔑 API Key:", CLOUDFLARE_API_KEY ? "Configured" : "Missing");

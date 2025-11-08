@@ -1,9 +1,10 @@
 import type { GenerateScriptRequest, ScriptSegment, MediaItem } from "@shared/schema";
 import { aiScriptResponseSchema } from "@shared/schema";
+import { getUserApiKey } from "../lib/userApiKeys";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-export async function generateVideoScript(request: GenerateScriptRequest): Promise<{ 
+export async function generateVideoScript(request: GenerateScriptRequest, userId?: string): Promise<{ 
   segments: ScriptSegment[], 
   mediaItems: MediaItem[],
   seoPackage?: any,
@@ -11,9 +12,10 @@ export async function generateVideoScript(request: GenerateScriptRequest): Promi
   ctaPlacements?: any[],
   musicMixing?: any
 }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const lengthInSeconds = request.length;
@@ -390,10 +392,11 @@ Generate a complete script with engaging narration, stock media recommendations,
   }
 }
 
-export async function improvePrompt(originalPrompt: string): Promise<string> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+export async function improvePrompt(originalPrompt: string, userId?: string): Promise<string> {
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are an AI assistant that helps improve video prompts for better video generation. 
@@ -455,16 +458,17 @@ Return ONLY the improved prompt text, no explanations or meta-commentary.`;
   }
 }
 
-export async function suggestDetails(prompt: string): Promise<{
+export async function suggestDetails(prompt: string, userId?: string): Promise<{
   mood: string;
   category: string;
   pace: string;
   audience: string;
   length: number;
 }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are an AI assistant that analyzes video prompts and suggests the best settings for video generation.
@@ -546,13 +550,14 @@ Return ONLY a JSON object with these exact fields, no markdown wrappers:
   }
 }
 
-export async function generateChannelName(niche: string): Promise<{
+export async function generateChannelName(niche: string, userId?: string): Promise<{
   channelName: string;
   logoUrl: string;
 }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are a creative YouTube channel naming expert. Generate a unique, catchy, and memorable channel name based on the given niche. The name should be brandable, easy to remember, and relevant to the niche.
@@ -627,7 +632,7 @@ Return ONLY a JSON object with this exact field, no markdown wrappers:
 export async function generateVideoIdea(request: {
   niche: string;
   channelDescription?: string;
-}): Promise<{
+}, userId?: string): Promise<{
   title: string;
   description: string;
   category: string;
@@ -638,9 +643,10 @@ export async function generateVideoIdea(request: {
   seoDescription: string;
   hashtags: string[];
 }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are a YouTube content strategist. Generate a trending, engaging video idea based on the channel's niche. The idea should be creative, timely, and optimized for views and engagement.
@@ -730,10 +736,11 @@ Return ONLY a JSON object with these exact fields, no markdown wrappers:
 export async function generateNicheSuggestions(request: {
   userInterests?: string;
   useCase?: string;
-}): Promise<{ niches: string[] }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+}, userId?: string): Promise<{ niches: string[] }> {
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are a YouTube content strategist. Generate personalized niche suggestions based on user interests and use case. The niches should be specific, trending, and have good growth potential.
@@ -801,10 +808,11 @@ Return ONLY a JSON object with this exact field, no markdown wrappers:
   }
 }
 
-export async function explainNiche(niche: string): Promise<{ explanation: string }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+export async function explainNiche(niche: string, userId?: string): Promise<{ explanation: string }> {
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are a YouTube content advisor. Provide a clear, concise explanation of a YouTube niche, including what type of content it involves, who the audience is, and why it's popular. Keep it to 2-3 sentences.
@@ -868,10 +876,11 @@ Return ONLY a JSON object with this exact field, no markdown wrappers:
   }
 }
 
-export async function generateChannelNameList(niche: string, count: number = 5): Promise<{ channelNames: string[] }> {
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+export async function generateChannelNameList(niche: string, count: number = 5, userId?: string): Promise<{ channelNames: string[] }> {
+  const userApiKey = await getUserApiKey(userId, 'openrouter');
+  const OPENROUTER_API_KEY = userApiKey || process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const systemPrompt = `You are a creative YouTube channel naming expert. Generate multiple unique, catchy, and memorable channel names based on the given niche. The names should be brandable, easy to remember, and relevant to the niche.

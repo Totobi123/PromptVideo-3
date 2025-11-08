@@ -1,4 +1,5 @@
-const FREESOUND_API_KEY = process.env.FREESOUND_API_KEY;
+import { getUserApiKey } from "../lib/userApiKeys";
+
 const FREESOUND_API_URL = "https://freesound.org/apiv2/search/text/";
 
 type Mood = "happy" | "casual" | "sad" | "promotional" | "enthusiastic";
@@ -30,8 +31,11 @@ interface FreesoundSearchResponse {
 }
 
 export async function searchBackgroundMusic(
-  mood: Mood
+  mood: Mood,
+  userId?: string
 ): Promise<{ url: string; title: string; creator: string; license: string } | null> {
+  const userApiKey = await getUserApiKey(userId, 'freesound');
+  const FREESOUND_API_KEY = userApiKey || process.env.FREESOUND_API_KEY;
   if (!FREESOUND_API_KEY) {
     console.error("FREESOUND_API_KEY is not configured");
     return null;

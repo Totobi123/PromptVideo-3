@@ -1,4 +1,5 @@
-const MURF_API_KEY = process.env.MURF_API_KEY;
+import { getUserApiKey } from "../lib/userApiKeys";
+
 const MURF_API_URL = "https://api.murf.ai/v1/speech/generate";
 
 type Mood = "happy" | "casual" | "sad" | "promotional" | "enthusiastic";
@@ -52,10 +53,13 @@ export async function generateVoiceover(
   text: string, 
   voiceId: string = "en-US-natalie",
   pace: Pace = "normal",
-  style?: string
+  style?: string,
+  userId?: string
 ): Promise<string> {
+  const userApiKey = await getUserApiKey(userId, 'murf');
+  const MURF_API_KEY = userApiKey || process.env.MURF_API_KEY;
   if (!MURF_API_KEY) {
-    throw new Error("MURF_API_KEY is not configured");
+    throw new Error("MURF_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   const speed = getSpeedForPace(pace);

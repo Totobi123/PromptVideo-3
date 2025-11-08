@@ -25,6 +25,12 @@ export const users = pgTable("users", {
   defaultAspectRatio: text("default_aspect_ratio"),
   notificationsEnabled: text("notifications_enabled").default("false"),
   emailNotificationsEnabled: text("email_notifications_enabled").default("false"),
+  openrouterApiKey: text("openrouter_api_key"),
+  murfApiKey: text("murf_api_key"),
+  pexelsApiKey: text("pexels_api_key"),
+  freesoundApiKey: text("freesound_api_key"),
+  cloudflareApiKey: text("cloudflare_api_key"),
+  cloudflareWorkerUrl: text("cloudflare_worker_url"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -51,6 +57,15 @@ export const updateUserProfileSchema = z.object({
   defaultAspectRatio: z.string().optional(),
   notificationsEnabled: z.string().optional(),
   emailNotificationsEnabled: z.string().optional(),
+});
+
+export const updateApiKeysSchema = z.object({
+  openrouterApiKey: z.string().optional(),
+  murfApiKey: z.string().optional(),
+  pexelsApiKey: z.string().optional(),
+  freesoundApiKey: z.string().optional(),
+  cloudflareApiKey: z.string().optional(),
+  cloudflareWorkerUrl: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

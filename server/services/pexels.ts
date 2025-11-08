@@ -1,4 +1,5 @@
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+import { getUserApiKey } from "../lib/userApiKeys";
+
 const PEXELS_API_URL = "https://api.pexels.com/v1";
 const PEXELS_VIDEO_API_URL = "https://api.pexels.com/videos";
 
@@ -20,9 +21,11 @@ interface PexelsVideo {
   }>;
 }
 
-export async function searchPexelsMedia(query: string, type: "image" | "video"): Promise<{ url: string; thumbnail: string }> {
+export async function searchPexelsMedia(query: string, type: "image" | "video", userId?: string): Promise<{ url: string; thumbnail: string }> {
+  const userApiKey = await getUserApiKey(userId, 'pexels');
+  const PEXELS_API_KEY = userApiKey || process.env.PEXELS_API_KEY;
   if (!PEXELS_API_KEY) {
-    throw new Error("PEXELS_API_KEY is not configured");
+    throw new Error("PEXELS_API_KEY is not configured. Please add your API key in Settings or contact support.");
   }
 
   try {
