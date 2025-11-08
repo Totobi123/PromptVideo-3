@@ -89,6 +89,16 @@ async function cleanupExpiredHistory() {
 export async function registerRoutes(app: Express): Promise<Server> {
   setInterval(cleanupExpiredHistory, 5 * 60 * 1000);
   cleanupExpiredHistory();
+  
+  // Health check endpoint for uptime monitoring and keep-alive
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
+  
   // Generate video script with AI
   app.post("/api/generate-script", async (req, res) => {
     try {

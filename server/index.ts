@@ -99,5 +99,27 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Keep-alive service: Self-ping every 5 minutes to prevent server sleep
+    const PING_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    const pingUrl = `http://localhost:${port}/health`;
+    
+    const selfPing = async () => {
+      try {
+        const response = await fetch(pingUrl);
+        const data = await response.json();
+        log(`✅ Keep-alive ping successful - uptime: ${Math.floor(data.uptime)}s`);
+      } catch (error) {
+        log(`⚠️ Keep-alive ping failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    };
+    
+    // Initial ping after 1 minute
+    setTimeout(selfPing, 60 * 1000);
+    
+    // Recurring pings every 5 minutes
+    setInterval(selfPing, PING_INTERVAL);
+    
+    log('🔄 Keep-alive service started (self-ping every 5 minutes)');
   });
 })();
