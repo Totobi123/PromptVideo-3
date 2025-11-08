@@ -9,7 +9,13 @@ vite.config.ts.*
 .env
 .env.local
 .env.production
+.env*.local
+VERCEL_ENV_VARS.txt
 
 # Output directories
 output/
 temp/
+
+# Vercel
+.vercel
+.vercel_build_output

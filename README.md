@@ -166,9 +166,25 @@ Start the production server:
 npm start
 ```
 
-## 🌐 Free Deployment Options
+## 🌐 Deployment to Vercel (Recommended)
 
-### Option 1: Deploy on Replit (Recommended - Easiest)
+### Quick Deploy to Vercel
+
+**For complete step-by-step Vercel deployment guide, see [DEPLOYMENT_VERCEL.md](./DEPLOYMENT_VERCEL.md)**
+
+#### Quick Steps:
+1. Push your code to GitHub
+2. Connect GitHub repo to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically
+
+**⚠️ Important:** Vercel has limitations with FFmpeg video rendering. See [DEPLOYMENT_VERCEL.md](./DEPLOYMENT_VERCEL.md) for solutions and alternative architectures.
+
+---
+
+## 🌐 Alternative Free Deployment Options
+
+### Option 1: Deploy on Replit (Best for Full Video Rendering)
 
 Replit provides free hosting with automatic deployments.
 
